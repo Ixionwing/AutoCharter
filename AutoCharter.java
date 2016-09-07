@@ -180,7 +180,7 @@ public class AutoCharter{
 			boolean checkEOF = false;
 			int[] n = new int[files.size()];
 			
-			for(int measure = 1; measure < 6; measure++){ // !checkEOF
+			for(int measure = 1; !checkEOF; measure++){ // !checkEOF
 				for(int lane = 0; lane < files.size(); lane++){
 					stringOfTokens = "";
 					if (n[lane] != -1){
@@ -195,8 +195,10 @@ public class AutoCharter{
 								
 								else{
 									newChunkFirstHalf = getTotalAmp(Arrays.copyOfRange(chunk, 0, (int)byteArraySize[lane]/2 -1));
-									if (newChunkFirstHalf/3 > prevChunkSecondHalf && newChunkFirstHalf/3 > 6500){
+                                    if (lane == 0 && (measure == 1 || measure == 2)) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens + " ncfh: " + newChunkFirstHalf + " pcsh: " + prevChunkSecondHalf + " th: " + (newChunkFirstHalf-prevChunkSecondHalf/9800));
+									if ((newChunkFirstHalf-prevChunkSecondHalf/1000) > prevChunkSecondHalf && newChunkFirstHalf/3 > 10000){
 									stringOfTokens = stringOfTokens.concat("06");
+                                    if (lane == 0 && (measure == 1 || measure == 2)) System.out.println("note found!");
 									}
 									else stringOfTokens = stringOfTokens.concat("00");
 								}
