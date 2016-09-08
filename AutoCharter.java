@@ -195,10 +195,10 @@ public class AutoCharter{
 								
 								else{
 									newChunkFirstHalf = getTotalAmp(Arrays.copyOfRange(chunk, 0, (int)byteArraySize[lane]/2 -1));
-                                    if (lane == 0 && (measure == 1 || measure == 2)) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens + " ncfh: " + newChunkFirstHalf + " pcsh: " + prevChunkSecondHalf + " th: " + (newChunkFirstHalf-prevChunkSecondHalf/9800));
-									if ((newChunkFirstHalf-prevChunkSecondHalf/1000) > prevChunkSecondHalf && newChunkFirstHalf/3 > 10000){
+                                    if (lane == 1) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens + " ncfh: " + newChunkFirstHalf + " pcsh: " + prevChunkSecondHalf + " th: " + (int)(newChunkFirstHalf * (0.8)));
+									if ((newChunkFirstHalf * (0.8)) > prevChunkSecondHalf && newChunkFirstHalf > 60000 ){
 									stringOfTokens = stringOfTokens.concat("06");
-                                    if (lane == 0 && (measure == 1 || measure == 2)) System.out.println("note found!");
+                                    if (lane == 1) System.out.println("note found!");
 									}
 									else stringOfTokens = stringOfTokens.concat("00");
 								}
