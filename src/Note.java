@@ -18,7 +18,7 @@ public class Note{
 
     private int position;
     private int interval; // 16 normal, 24 triple
-    private int lane; // 1-7, SC = 8
+    private int lane; 
     private int sample;
     
     public Note(){

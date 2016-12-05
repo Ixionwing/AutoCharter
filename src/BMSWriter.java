@@ -77,7 +77,7 @@ public class BMSWriter{
                     if(tokenStringArray[lane] != null){
                         System.out.println("Printing lane " + getID(lane) + " in measure " + (measure+1));
                         if (!tokenStringArray[lane].equals("")){
-                            writer.write("#" + String.format("%03d",measure+1) + getID(lane) + ":" + tokenStringArray[lane]);
+                            writer.write("#" + String.format("%03d",measure+1) + (getID(lane) < 0 ? "0" : "") + getID(lane) + ":" + tokenStringArray[lane]);
                             writer.newLine();
                         }
                     }
@@ -97,6 +97,7 @@ public class BMSWriter{
 		if (lane < 3) return lane+11;
 		else if (lane == 3) return 16;
 		else if (lane == 4 || lane == 5) return lane+10;
-        else return lane+12;
+        else if (lane == 6 || lane == 7) return lane+12;
+        else return 1;
 	}
 }

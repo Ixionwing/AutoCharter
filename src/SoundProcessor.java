@@ -65,7 +65,7 @@ public class SoundProcessor{
 			
 			for(int measure = 0; !checkEOF; measure++){ // !checkEOF
                 NoteList tempList = new NoteList();
-				for(int lane = 0; lane < files.size() || lane < 8; lane++){
+				for(int lane = 0; lane < files.size() && lane < 8; lane++){
                     System.out.println("Measure " + measure + " in file " + lane);
 					if (n[lane] != -1){
 						for(int tokens = 0; tokens < 16; tokens++){
