@@ -5,12 +5,23 @@ import java.util.*;
 public class SoundProcessor{
     private ArrayList<AudioInputStream> files;
     private int bpm;
-    private ArrayList<byte[]> signatures;
+    private ArrayList<ArrayList<byte[]>> signatures;
+    private ArrayList<byte[]> signaturesMaster;
+    private ArrayList<ArrayList<byte[]>> tails;
+    private ArrayList<byte[]> tailsMaster;
 
     public SoundProcessor(ArrayList<AudioInputStream> files, int bpm){
         this.files = files;
         this.bpm = bpm;
-        signatures = new ArrayList<byte[]>();
+        signatures = new ArrayList<ArrayList<byte[]>>();
+        tails = new ArrayList<ArrayList<byte[]>>();
+        for (int i = 0; i < 8; i++){
+        	signatures.add(new ArrayList<byte[]>());
+        	tails.add(new ArrayList<byte[]>());
+        }
+        
+        signaturesMaster = new ArrayList<byte[]>();
+        tailsMaster = new ArrayList<byte[]>();
     }
     
     public ArrayList<NoteList> process(){ // NoteList for 8 lanes, any number of NoteList arrays for any number of measures
@@ -43,6 +54,9 @@ public class SoundProcessor{
 			
 			for(int i = 0; i < files.size(); i++){
 			byteArraySize[i] = sixteenthLength * af.get(i).getSampleRate() * af.get(i).getFrameSize();
+			while(byteArraySize[i] % 4.0 >= 0.5){
+				byteArraySize[i] -= 0.5;
+			}
 			System.out.println("Byte array size for file " + i + " is " + (int)byteArraySize[i]);
 			}
 			
@@ -51,7 +65,7 @@ public class SoundProcessor{
 			
 			for(int measure = 0; !checkEOF; measure++){ // !checkEOF
                 NoteList tempList = new NoteList();
-				for(int lane = 0; lane < files.size(); lane++){
+				for(int lane = 0; lane < files.size() || lane < 8; lane++){
                     System.out.println("Measure " + measure + " in file " + lane);
 					if (n[lane] != -1){
 						for(int tokens = 0; tokens < 16; tokens++){
@@ -66,8 +80,8 @@ public class SoundProcessor{
 								if(!foundNotes){ // if it's the very first note
 									if(getTotalAmp(chunk) >= 100000){
 										foundNotes = true;
-                                        addSignature(chunk);
-                                        tempList.addNote(new Note(tokens, lane, signatures.size()));
+                                        addSignature(chunk, lane);
+                                        tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                         System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                     }
 								}
@@ -82,14 +96,16 @@ public class SoundProcessor{
                                         
                                     	if (sigcheck < 0){
                                     		System.out.println("Adding new signature");
-                                    		addSignature(chunk);
-                                    		tempList.addNote(new Note(tokens, lane, signatures.size()));
+                                    		addSignature(chunk, lane);
+                                    		tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                     	}
                                     	else{
                                     		System.out.println("Signature match!");
                                     		tempList.addNote(new Note(tokens, lane, sigcheck+1));
                                     	}
 									}
+                                    
+                                    // TODO: Append "tails" to samples
 									
 								}
 								prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)byteArraySize[lane]/2, (int)byteArraySize[lane]));
@@ -135,23 +151,29 @@ public class SoundProcessor{
 		return x;
 	}
 	
-	public void addSignature(byte[] chunk){
+	public ArrayList<ArrayList<byte[]>> getSignatures(){
+		return this.signatures;
+	}
+	
+	public void addSignature(byte[] chunk, int lane){
 		//byte[] newSig = new byte[chunk.length];
         //System.arraycopy(chunk, 0, newSig, 0, chunk.length);
 		byte[] newSig = Arrays.copyOf(chunk, chunk.length);
-        signatures.add(newSig);
+        signatures.get(lane).add(newSig);
+        signaturesMaster.add(newSig);
 	}
 	
 	public int compareSignatures(byte[] chunk){
 		for(int i = 0; i < signatures.size(); i++){
-			System.out.println("Matching note with signature " + i);
-			if(matchLPC(chunk, i))
-				return i;
+			for (int j = 0; j < signatures.get(i).size(); j++){System.out.println("Matching note with signature " + j + " in lane " + i);
+				if(matchLPC(chunk, i, j))
+					return i;
+			}
 		}
 		return -1;
 	}
 	
-	public boolean matchLPC(byte[] chunk, int i){
+	public boolean matchLPC(byte[] chunk, int i, int j){
 		int lag = 60;
 		double[] chunkAC = new double[lag];
 		double[] sigAC = new double[lag];
@@ -161,15 +183,15 @@ public class SoundProcessor{
 		double[] sigref = new double[lag-1];
 		
 		LPC.autocorr(chunk, chunkAC, lag, chunk.length);
-		LPC.autocorr(signatures.get(i), sigAC, lag, signatures.get(i).length);
+		LPC.autocorr(signatures.get(i).get(j), sigAC, lag, signatures.get(i).get(j).length);
 		
 		LPC.wld(chunkLPC, chunkAC, chunkref, lag-1);
 		LPC.wld(sigLPC, sigAC, sigref, lag-1);
 		
 		double sum = 0;
 		
-		for (int j = 0; j < lag-1; j++){
-			sum += Math.pow((chunkLPC[j] - sigLPC[j]), 2);
+		for (int k = 0; k < lag-1; k++){
+			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
 		}
 		
 		System.out.println("Sum of LPC between current note and signature " + i + " is: " + sum);

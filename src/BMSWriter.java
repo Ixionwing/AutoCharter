@@ -75,7 +75,7 @@ public class BMSWriter{
                 String[] tokenStringArray = nls.get(measure).compileNotes();
                 for (int lane = 0; lane < 8; lane++){
                     if(tokenStringArray[lane] != null){
-                        System.out.println("Printing lane " + getID(lane) + " in measure " + measure+1);
+                        System.out.println("Printing lane " + getID(lane) + " in measure " + (measure+1));
                         if (!tokenStringArray[lane].equals("")){
                             writer.write("#" + String.format("%03d",measure+1) + getID(lane) + ":" + tokenStringArray[lane]);
                             writer.newLine();
