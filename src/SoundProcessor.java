@@ -106,6 +106,9 @@ public class SoundProcessor{
 									}
                                     
                                     // TODO: Append "tails" to samples
+                                    else{
+                                    	
+                                    }
 									
 								}
 								prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)byteArraySize[lane]/2, (int)byteArraySize[lane]));
