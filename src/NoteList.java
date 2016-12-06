@@ -90,7 +90,7 @@ public class NoteList{
                 //System.out.println("j = " + j);
                 if(tempList.size() != 0){
                     if (tempList.get(0).getPosition() == j){
-                        lanes[i] += ((tempList.get(0).getSample() < 17 && tempList.get(0).getSample() > 0) ? "0" : "") + Integer.toString(tempList.get(0).getSample() + 9, 36);
+                        lanes[i] += ((tempList.get(0).getSample() < 27 && tempList.get(0).getSample() > 0) ? "0" : "") + Integer.toString(tempList.get(0).getSample() + 9, 36);
                         tempList.remove(0);
                     }
                     else
@@ -98,7 +98,7 @@ public class NoteList{
                 }
                 else lanes[i] += "00";
             }
-            System.out.println("result for lane " + i + ": " + lanes[i]);
+            //System.out.println("result for lane " + i + ": " + lanes[i]);
         }
         
         return lanes;

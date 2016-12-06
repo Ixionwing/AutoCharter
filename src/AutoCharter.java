@@ -59,7 +59,7 @@ public class AutoCharter{
 		writer = new BMSWriter(info.get(0), audioFilenames);
 		
 		writer.constructBaseBMS(info, bpm);
-		writer.processAndNote(files, bpm);
+		writer.processAndNote(files, fileTemp, bpm);
 		
 		System.out.println("Automatic generation complete! Now closing...");
 		

@@ -66,8 +66,8 @@ public class BMSWriter{
 	
 	}
 
-    public void processAndNote(ArrayList<AudioInputStream> files, int bpm){
-        SoundProcessor sp = new SoundProcessor(files, bpm);
+    public void processAndNote(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm){
+        SoundProcessor sp = new SoundProcessor(fileStreams, files, bpm);
         ArrayList<NoteList> nls = sp.process();
         
         try {
@@ -75,7 +75,7 @@ public class BMSWriter{
                 String[] tokenStringArray = nls.get(measure).compileNotes();
                 for (int lane = 0; lane < 8; lane++){
                     if(tokenStringArray[lane] != null){
-                        System.out.println("Printing lane " + getID(lane) + " in measure " + (measure+1));
+                        //System.out.println("Printing lane " + getID(lane) + " in measure " + (measure+1));
                         if (!tokenStringArray[lane].equals("")){
                             writer.write("#" + String.format("%03d",measure+1) + (getID(lane) < 0 ? "0" : "") + getID(lane) + ":" + tokenStringArray[lane]);
                             writer.newLine();
@@ -83,6 +83,24 @@ public class BMSWriter{
                     }
                 }
                 writer.newLine();
+            }
+            
+            ArrayList<byte[]> sigsMaster = sp.getSignaturesMaster();
+            ArrayList<ArrayList<byte[]>> signatures = sp.getSignatures();
+            ArrayList<ArrayList<byte[]>> tails = sp.getTails();
+            
+            for(int lane = 0; lane < signatures.size(); lane++){
+            	ArrayList<byte[]> sigList = signatures.get(lane);
+            	ArrayList<byte[]> tailList = tails.get(lane);
+            	for(int num = 0; num < sigList.size(); num++){
+            		byte[] combinedArr = sp.combineArrays(sigList.get(num), tailList.get(num));
+            		AudioInputStream ais = sp.getAIS(combinedArr, lane);
+            		AudioFileFormat.Type targetFileType = sp.getAFF(lane).getType();
+            		int noteIndex = sigsMaster.indexOf(sigList.get(num));
+            		String filename = ((noteIndex < 27) ? "0" : "") + Integer.toString(noteIndex + 10, 36);
+            		File outputFile = new File(filename + ".wav");
+            		AudioSystem.write(ais, targetFileType, outputFile);
+            	}
             }
             
 			if (writer != null) writer.close();
