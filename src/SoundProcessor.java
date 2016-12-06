@@ -9,19 +9,23 @@ public class SoundProcessor{
     private ArrayList<byte[]> signaturesMaster;
     private ArrayList<ArrayList<byte[]>> tails;
     private ArrayList<byte[]> tailsMaster;
-
+    private ArrayList<ArrayList<Boolean>> tailsCompletion;
+    
     public SoundProcessor(ArrayList<AudioInputStream> files, int bpm){
         this.files = files;
         this.bpm = bpm;
         signatures = new ArrayList<ArrayList<byte[]>>();
         tails = new ArrayList<ArrayList<byte[]>>();
+        tailsCompletion = new ArrayList<ArrayList<Boolean>>();
         for (int i = 0; i < 8; i++){
-        	signatures.add(new ArrayList<byte[]>());
-        	tails.add(new ArrayList<byte[]>());
+        	signatures.add(new ArrayList<byte[]>(255));
+        	tails.add(new ArrayList<byte[]>(255));
+        	tailsCompletion.add(new ArrayList<Boolean>(255));
         }
         
         signaturesMaster = new ArrayList<byte[]>();
         tailsMaster = new ArrayList<byte[]>();
+        
     }
     
     public ArrayList<NoteList> process(){ // NoteList for 8 lanes, any number of NoteList arrays for any number of measures
@@ -32,7 +36,9 @@ public class SoundProcessor{
 			int[] newChunkFirstHalf = {0,0,0,0,0};
 			int[] prevChunkSecondHalf = {0,0,0,0,0};
 			double sixteenthLength;
-			boolean foundNotes = false;
+			boolean[] foundNotes = new boolean[8];
+			int[] lastNote = new int[8]; // keeps track of the index of the last note confirmed in each lane
+			int[] lastMeasure = new int[8]; // keeps track of the measure where the last note was confirmed lane
 			
 			for(int i = 0; i < files.size(); i++){
 				af.add((files.get(i)).getFormat());
@@ -65,6 +71,7 @@ public class SoundProcessor{
 			
 			for(int measure = 0; !checkEOF; measure++){ // !checkEOF
                 NoteList tempList = new NoteList();
+                noteLists.add(tempList);
 				for(int lane = 0; lane < files.size() && lane < 8; lane++){
                     System.out.println("Measure " + measure + " in file " + lane);
 					if (n[lane] != -1){
@@ -77,12 +84,15 @@ public class SoundProcessor{
                                     ex.printStackTrace();
                                     System.exit(1);
                                 }
-								if(!foundNotes){ // if it's the very first note
+								if(!foundNotes[lane]){ // if it's the very first note in each lane
 									if(getTotalAmp(chunk) >= 100000){
-										foundNotes = true;
+										foundNotes[lane] = true;
                                         addSignature(chunk, lane);
                                         tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                         System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
+                                        lastNote[lane] = tempList.getList().size()-1;
+                                        lastMeasure[lane] = measure;
+                                        tailsCompletion.get(lane).add(false);
                                     }
 								}
 								
@@ -103,11 +113,31 @@ public class SoundProcessor{
                                     		System.out.println("Signature match!");
                                     		tempList.addNote(new Note(tokens, lane, sigcheck+1));
                                     	}
+                                    	lastNote[lane] = tempList.getList().size()-1;
+                                    	lastMeasure[lane] = measure;
+                                    	tailsCompletion.get(lane).add(false);
 									}
                                     
                                     // TODO: Append "tails" to samples
                                     else{
-                                    	
+                                    	if(newChunkFirstHalf[lane] != 0){
+                                    		
+                                    		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new int[8])); // look for a series of 4 empty 16bit values
+                                    		int sigMasterIndex =  noteLists.get(lastMeasure[lane]).getList().get(lastNote[lane]).getSample() - 1;
+                                			int sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
+                                    		
+                                    		if (cutoff != -1 && !tailsCompletion.get(lane).get(sigIndex)){
+                                    			//byte[] tempChunk = Arrays.copyOfRange(chunk, 0, cutoff);
+                                    			byte[] newTail = new byte[tailsMaster.get(sigMasterIndex).length + cutoff];
+                                    			System.arraycopy(tailsMaster.get(sigMasterIndex), 0, newTail, 0, tailsMaster.get(sigMasterIndex).length-1);
+                                    			System.arraycopy(chunk, 0, newTail, tailsMaster.get(sigMasterIndex).length, cutoff);
+                                    			tailsMaster.set(sigMasterIndex, newTail);
+                                    			tails.get(lane).set(sigIndex, newTail);
+                                    		}
+                                    		else{
+                                    			tailsCompletion.get(lane).set(sigIndex, true);
+                                    		}
+                                    	}
                                     }
 									
 								}
@@ -124,7 +154,6 @@ public class SoundProcessor{
 						}
 					}
                 }
-                noteLists.add(tempList);
                 checkEOF = checkIfEnd(n, files.size());
             }
         System.out.println("noteLists count: " + noteLists.size());
@@ -162,8 +191,11 @@ public class SoundProcessor{
 		//byte[] newSig = new byte[chunk.length];
         //System.arraycopy(chunk, 0, newSig, 0, chunk.length);
 		byte[] newSig = Arrays.copyOf(chunk, chunk.length);
+		byte[] emptySig = new byte[2];
         signatures.get(lane).add(newSig);
         signaturesMaster.add(newSig);
+        tails.get(lane).add(emptySig);
+        tailsMaster.add(emptySig);
 	}
 	
 	public int compareSignatures(byte[] chunk){
@@ -174,6 +206,30 @@ public class SoundProcessor{
 			}
 		}
 		return -1;
+	}
+	
+	public boolean matchLPC(byte[] chunk1, byte[] chunk2){
+		int lag = 60;
+		double[] chunk1AC = new double[lag];
+		double[] chunk2AC = new double[lag];
+		double[] chunk1LPC = new double[lag-1];
+		double[] chunk2LPC = new double[lag-1];
+		double[] chunk1ref = new double[lag-1];
+		double[] chunk2ref = new double[lag-1];
+		
+		LPC.autocorr(chunk1, chunk1AC, lag, chunk1.length);
+		LPC.autocorr(chunk2, chunk2AC, lag, chunk2.length);
+		
+		LPC.wld(chunk1LPC, chunk1AC, chunk1ref, lag-1);
+		LPC.wld(chunk2LPC, chunk2AC, chunk2ref, lag-1);
+		
+		double sum = 0;
+		
+		for (int k = 0; k < lag-1; k++){
+			sum += Math.pow((chunk1LPC[k] - chunk2LPC[k]), 2);
+		}
+		
+		return sum < 0.01;
 	}
 	
 	public boolean matchLPC(byte[] chunk, int i, int j){
