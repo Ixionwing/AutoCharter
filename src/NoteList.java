@@ -93,7 +93,7 @@ public class NoteList{
                 //System.out.println("j = " + j);
                 if(tempList.size() != 0){
                     if (tempList.get(0).getPosition() == j){
-                        lanes[i] += ((tempList.get(0).getSample() < 27 && tempList.get(0).getSample() > 0) ? "0" : "") + Integer.toString(tempList.get(0).getSample() + 9, 36);
+                        lanes[i] += Integer.toString(tempList.get(0).getSample() + 35, 36);
                         tempList.remove(0);
                     }
                     else

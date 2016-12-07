@@ -36,21 +36,35 @@ public class Signature {
 	
 
 	public void append (byte[] arr1){
-		byte[] newArr = new byte[this.bytes.length + arr1.length];
+		byte[] newArr;
+		if (this.bytes == null){
+			this.bytes = arr1;
+		}
+		else{
+			newArr = new byte[this.bytes.length + arr1.length];
+			
+			System.arraycopy(this.bytes, 0, newArr, 0, this.bytes.length);
+			System.arraycopy(arr1, 0, newArr, this.bytes.length, arr1.length);
+			
+			this.bytes = newArr;
+		}
 		
-		System.arraycopy(this.bytes, 0, newArr, 0, this.bytes.length);
-		System.arraycopy(arr1, 0, newArr, this.bytes.length, arr1.length);
 		
-		this.bytes = newArr;
 	}
 	
 	public void append (Signature sig){
-		byte[] newArr = new byte[this.bytes.length + sig.getBytes().length];
+		byte[] newArr;
 		
-		System.arraycopy(this.bytes, 0, newArr, 0, this.bytes.length);
-		System.arraycopy(sig.getBytes(), 0, newArr, this.bytes.length, sig.getBytes().length);
-		
-		this.bytes = newArr;
+		if (this.bytes == null){
+			this.bytes = sig.getBytes();
+		}
+		else {
+			newArr = new byte[this.bytes.length + sig.getBytes().length];
+			System.arraycopy(this.bytes, 0, newArr, 0, this.bytes.length);
+			System.arraycopy(sig.getBytes(), 0, newArr, this.bytes.length, sig.getBytes().length);
+			
+			this.bytes = newArr;
+		}
 	}
 	
 }

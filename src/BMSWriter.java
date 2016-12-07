@@ -98,10 +98,18 @@ public class BMSWriter{
             		AudioInputStream ais = sp.getAIS(combinedArr, lane);
             		AudioFileFormat.Type targetFileType = sp.getAFF(lane).getType();
             		int noteIndex = sigsMaster.indexOf(sigList.get(num));
-            		String filename = ((noteIndex < 27) ? "0" : "") + Integer.toString(noteIndex + 10, 36);
+            		String filename = Integer.toString(noteIndex + 36, 36);
             		File outputFile = new File(filename + ".wav");
             		AudioSystem.write(ais, targetFileType, outputFile);
             	}
+            }
+            
+            writer.newLine();
+            
+            for (int i = 0; i < sigsMaster.size(); i++){
+            	String s = Integer.toString(i+36, 36);
+            	writer.write("#WAV" + s + " " + s + ".wav");
+            	writer.newLine();
             }
             
 			if (writer != null) writer.close();

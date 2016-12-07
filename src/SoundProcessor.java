@@ -96,6 +96,7 @@ public class SoundProcessor{
 									if(getTotalAmp(chunk) >= 100000){
 										foundNotes[lane] = true;
                                         addSignature(chunk, lane);
+                                        System.out.println("Adding note of sample " + signaturesMaster.size());
                                         tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                         System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                         lastNote[lane] = tempList.getList().size()-1;
@@ -109,35 +110,34 @@ public class SoundProcessor{
 									// TODO: fix > threshold
                                     if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 60000 ){
                                     	System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
-                                    	int sigcheck = compareSignatures(chunk);
+                                    	int[] sigcheck = compareSignatures(chunk);
                                         
-                                    	if (sigcheck < 0){
-                                    		System.out.println("Adding new signature");
+                                    	if (sigcheck[0] < 0){
+                                    		System.out.println("Adding new signature and cutting off previous signature");
+                                        	tails.get(lane).get(tails.get(lane).size()-1).setComplete(true);
                                     		addSignature(chunk, lane);
+                                    		System.out.println("???Adding note of sample " + signaturesMaster.size());
                                     		tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                     	}
                                     	else{
-                                    		System.out.println("Signature match! " + sigcheck);
-                                    		tempList.addNote(new Note(tokens, lane, sigcheck+1));
+                                    		System.out.println("Signature match! Setting signature " + (signatures.get(lane).size()-1) + " to true");
+                                        	tails.get(lane).get(tails.get(lane).size()-1).setComplete(true);
+                                        	int trueIndex = signaturesMaster.indexOf(signatures.get(sigcheck[0]).get(sigcheck[1]));
+                                    		tempList.addNote(new Note(tokens, lane, trueIndex+1));
                                     	}
                                     	lastNote[lane] = tempList.getList().size()-1;
                                     	lastMeasure[lane] = measure;
-                                    	//System.out.println("Previous tail complete!");
-                                    	signatures.get(lane).get(signatures.get(lane).size()-1).setComplete(true);
-                                    	/*System.out.print("Tails for lane " + lane + ": ");
-                                		for(boolean tailStatus : tailsCompletion.get(lane))
-                                			System.out.println(tailStatus + " ");*/
+                                    	System.out.print("Tails for lane " + lane + ": ");
+                                		for(Signature tailItem : tails.get(lane))
+                                			System.out.println(tailItem.isComplete() + " ");
                                     	
 									}
                                     
-                                    
                                     else{
                                     	if(newChunkFirstHalf[lane] != 0){
-                                    		
-                                    		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new int[8])); // look for a series of 4 empty 16bit values
+                                    		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new byte[8])); // look for a series of 4 empty 16bit values
                                     		int sigMasterIndex =  noteLists.get(lastMeasure[lane]).getList().get(lastNote[lane]).getSample()-1;
-                                    		System.out.println("Last note of lane " + lane + " is " + sigMasterIndex);
-                                    		
+                                    		//System.out.println("Last note of lane " + lane + " is " + sigMasterIndex);
                                     		signatures.get(lane);
                                     		signaturesMaster.get(sigMasterIndex);
                                 			int sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
@@ -166,6 +166,7 @@ public class SoundProcessor{
                                     			//System.out.println("Tail is now " + newTail[0] + " " + newTail[newTail.length-1]);
                                     			tailsMaster.set(sigMasterIndex, masterTail);
                                     			tails.get(lane).set(sigIndex, masterTail);
+                                    			System.out.println("Indices " + sigMasterIndex + " " + sigIndex + " are now set to " + tailsMaster.get(sigMasterIndex).isComplete() + " " + tails.get(lane).get(sigIndex).isComplete());
                                     		}
                                     	}
                                     }
@@ -233,22 +234,22 @@ public class SoundProcessor{
 		//byte[] newSig = new byte[chunk.length];
         //System.arraycopy(chunk, 0, newSig, 0, chunk.length);
 		Signature newSig = new Signature(Arrays.copyOf(chunk, chunk.length), lane);
-		Signature emptySig = new Signature(new byte[4], lane);
+		Signature emptySig = new Signature(null, lane);
         signatures.get(lane).add(newSig);
         signaturesMaster.add(newSig);
         tails.get(lane).add(emptySig);
         tailsMaster.add(emptySig);
 	}
 	
-	public int compareSignatures(byte[] chunk){
+	public int[] compareSignatures(byte[] chunk){
 		for(int i = 0; i < signatures.size(); i++){
 			for (int j = 0; j < signatures.get(i).size(); j++){
 				//System.out.println("Matching note with signature " + j + " in lane " + i);
 				if(matchLPC(chunk, i, j))
-					return i;
+					return new int[]{i,j};
 			}
 		}
-		return -1;
+		return new int[]{-1,-1};
 	}
 	
 	public boolean matchLPC(byte[] chunk1, byte[] chunk2){

@@ -31,10 +31,11 @@ public class AutoCharter{
 		System.out.println("Input the chart's tentative level: ");
 		info.add(scan.nextLine());
 		
-		System.out.println("Note designation: ");
+		System.out.println("Recommended note designation: ");
 		System.out.println("Lane 1: File 1, bass/kick\nLane 2: File 2, high hat\nLane 3: File 3, snare/clap\nTurntable: File 4, cymbal/scratch\nLane 4: File 5, extra");
-		System.out.println("Input up to 5 filenames, including extension (exit with 0): ");
-		for(int i = 0; i < 5; i++){
+		System.out.println("All lanes beyond 8 will be placed in the background.");
+		System.out.println("Input up to 36 filenames, including extension (exit with 0): ");
+		for(int i = 0; i<36; i++){
 			temp = scan.nextLine();
 			if(!(temp.equals("0"))){
 				audioFilenames.add(temp);
