@@ -6,11 +6,10 @@ public class SoundProcessor{
     private ArrayList<AudioInputStream> fileStreams;
     private ArrayList<File> files;
     private int bpm;
-    private ArrayList<ArrayList<byte[]>> signatures;
-    private ArrayList<byte[]> signaturesMaster;
-    private ArrayList<ArrayList<byte[]>> tails;
-    private ArrayList<byte[]> tailsMaster;
-    private ArrayList<ArrayList<Boolean>> tailsCompletion; // for master
+    private ArrayList<Signature> signaturesMaster;
+    private ArrayList<Signature> tailsMaster;
+    private ArrayList<ArrayList<Signature>> signatures;
+    private ArrayList<ArrayList<Signature>> tails;
     private ArrayList<AudioFormat> afs;
     private ArrayList<AudioFileFormat> affs;
     
@@ -18,17 +17,15 @@ public class SoundProcessor{
         this.fileStreams = fileStreams;
         this.files = files;
         this.bpm = bpm;
-        signatures = new ArrayList<ArrayList<byte[]>>();
-        tails = new ArrayList<ArrayList<byte[]>>();
-        tailsCompletion = new ArrayList<ArrayList<Boolean>>();
+        signatures = new ArrayList<ArrayList<Signature>>();
+        tails = new ArrayList<ArrayList<Signature>>();
         for (int i = 0; i < 8; i++){
-        	signatures.add(new ArrayList<byte[]>(255));
-        	tails.add(new ArrayList<byte[]>(255));
-        	tailsCompletion.add(new ArrayList<Boolean>(255));
+        	signatures.add(new ArrayList<Signature>(15));
+        	tails.add(new ArrayList<Signature>(15));
         }
         
-        signaturesMaster = new ArrayList<byte[]>();
-        tailsMaster = new ArrayList<byte[]>();
+        signaturesMaster = new ArrayList<Signature>();
+        tailsMaster = new ArrayList<Signature>();
         
         afs = new ArrayList<AudioFormat>();
         affs = new ArrayList<AudioFileFormat>();
@@ -120,16 +117,16 @@ public class SoundProcessor{
                                     		tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                     	}
                                     	else{
-                                    		System.out.println("Signature match!");
+                                    		System.out.println("Signature match! " + sigcheck);
                                     		tempList.addNote(new Note(tokens, lane, sigcheck+1));
                                     	}
                                     	lastNote[lane] = tempList.getList().size()-1;
                                     	lastMeasure[lane] = measure;
-                                    	System.out.println("Previous tail complete!");
-                                    	System.out.print("Tails for lane " + lane + ": ");
+                                    	//System.out.println("Previous tail complete!");
+                                    	signatures.get(lane).get(signatures.get(lane).size()-1).setComplete(true);
+                                    	/*System.out.print("Tails for lane " + lane + ": ");
                                 		for(boolean tailStatus : tailsCompletion.get(lane))
-                                			System.out.print(tailStatus + " ");
-                                    	tailsCompletion.get(lane).set(tailsCompletion.get(lane).size()-1, true);
+                                			System.out.println(tailStatus + " ");*/
                                     	
 									}
                                     
@@ -138,33 +135,37 @@ public class SoundProcessor{
                                     	if(newChunkFirstHalf[lane] != 0){
                                     		
                                     		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new int[8])); // look for a series of 4 empty 16bit values
-                                    		int sigMasterIndex =  noteLists.get(lastMeasure[lane]).getList().get(lastNote[lane]).getSample() - 1;
+                                    		int sigMasterIndex =  noteLists.get(lastMeasure[lane]).getList().get(lastNote[lane]).getSample()-1;
+                                    		System.out.println("Last note of lane " + lane + " is " + sigMasterIndex);
+                                    		
+                                    		signatures.get(lane);
+                                    		signaturesMaster.get(sigMasterIndex);
                                 			int sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
                                     		
-                                			System.out.print("Tails for lane " + lane + ": ");
+                                			/*System.out.print("Tails for lane " + lane + ": ");
                                 			for(boolean tailStatus : tailsCompletion.get(lane))
-                                				System.out.print(tailStatus + " ");
+                                				System.out.print(tailStatus + " ");*/
                                 			
                                 			//TODO: Fix tail detection
-                                    		if (!tailsCompletion.get(lane).get(sigIndex)){
+                                    		if (!tails.get(lane).get(sigIndex).isComplete()){
                                     			//byte[] tempChunk = Arrays.copyOfRange(chunk, 0, cutoff);
-                                    			byte[] masterTail = tailsMaster.get(sigMasterIndex);
-                                    			byte[] appendee;
+                                    			Signature masterTail = tailsMaster.get(sigMasterIndex);
+                                    			Signature appendee;
                                     			System.out.println("Appending tail to signature " + sigMasterIndex + ". Cutoff: " + cutoff);
                                     			if (cutoff == -1){
-                                    				System.out.println("Tail not yet complete");
-                                    				appendee = chunk;
+                                    				//System.out.println("Tail not yet complete");
+                                    				appendee = new Signature(chunk, lane);
                                     			}
                                     			else{
-                                    				appendee = Arrays.copyOf(chunk, cutoff);
-                                        			System.out.println("Tail complete!");
-                                        			tailsCompletion.get(lane).set(sigIndex, true);
+                                    				appendee = new Signature(Arrays.copyOf(chunk, cutoff), lane);
+                                        			//System.out.println("Tail complete!");
+                                        			masterTail.setComplete(true);
                                     			}
-                                    			byte[] newTail = combineArrays(masterTail, appendee);
+                                    			masterTail.append(appendee);
                                     			
-                                    			System.out.println("Tail is now " + newTail[0] + " " + newTail[newTail.length-1]);
-                                    			tailsMaster.set(sigMasterIndex, newTail);
-                                    			tails.get(lane).set(sigIndex, newTail);
+                                    			//System.out.println("Tail is now " + newTail[0] + " " + newTail[newTail.length-1]);
+                                    			tailsMaster.set(sigMasterIndex, masterTail);
+                                    			tails.get(lane).set(sigIndex, masterTail);
                                     		}
                                     	}
                                     }
@@ -200,15 +201,6 @@ public class SoundProcessor{
 		return total;
 	}
 	
-	public byte[] combineArrays(byte[] arr1, byte[] arr2){
-		byte[] newArr = new byte[arr1.length + arr2.length];
-		
-		System.arraycopy(arr1, 0, newArr, 0, arr1.length);
-		System.arraycopy(arr2, 0, newArr, arr1.length, arr2.length);
-		
-		return newArr;
-	}
-	
 	public boolean checkIfEnd(int[] n, int filenum){
 		boolean x = true;
 		for(int i = 0; i < filenum; i++){
@@ -221,32 +213,31 @@ public class SoundProcessor{
 		return x;
 	}
 	
-	public ArrayList<ArrayList<byte[]>> getSignatures(){
+	public ArrayList<ArrayList<Signature>> getSignatures(){
 		return this.signatures;
 	}
 	
-	public ArrayList<byte[]> getSignaturesMaster(){
+	public ArrayList<Signature> getSignaturesMaster(){
 		return this.signaturesMaster;
 	}
 	
-	public ArrayList<ArrayList<byte[]>> getTails(){
+	public ArrayList<ArrayList<Signature>> getTails(){
 		return this.tails;
 	}
 	
-	public ArrayList<byte[]> getTailsMaster(){
+	public ArrayList<Signature> getTailsMaster(){
 		return this.tailsMaster;
 	}
 	
 	public void addSignature(byte[] chunk, int lane){
 		//byte[] newSig = new byte[chunk.length];
         //System.arraycopy(chunk, 0, newSig, 0, chunk.length);
-		byte[] newSig = Arrays.copyOf(chunk, chunk.length);
-		byte[] emptySig = new byte[4];
+		Signature newSig = new Signature(Arrays.copyOf(chunk, chunk.length), lane);
+		Signature emptySig = new Signature(new byte[4], lane);
         signatures.get(lane).add(newSig);
         signaturesMaster.add(newSig);
         tails.get(lane).add(emptySig);
         tailsMaster.add(emptySig);
-    	tailsCompletion.get(lane).add(false);
 	}
 	
 	public int compareSignatures(byte[] chunk){
@@ -281,6 +272,9 @@ public class SoundProcessor{
 			sum += Math.pow((chunk1LPC[k] - chunk2LPC[k]), 2);
 		}
 		
+
+		System.out.println("Sum of LPC is: " + sum + ", returns " + (sum<0.01));
+		
 		return sum < 0.01;
 	}
 	
@@ -294,7 +288,7 @@ public class SoundProcessor{
 		double[] sigref = new double[lag-1];
 		
 		LPC.autocorr(chunk, chunkAC, lag, chunk.length);
-		LPC.autocorr(signatures.get(i).get(j), sigAC, lag, signatures.get(i).get(j).length);
+		LPC.autocorr(signatures.get(i).get(j).getBytes(), sigAC, lag, signatures.get(i).get(j).getBytes().length);
 		
 		LPC.wld(chunkLPC, chunkAC, chunkref, lag-1);
 		LPC.wld(sigLPC, sigAC, sigref, lag-1);
@@ -305,7 +299,7 @@ public class SoundProcessor{
 			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
 		}
 		
-		//System.out.println("Sum of LPC between current note and signature " + i + " is: " + sum);
+		System.out.println("Sum of LPC between current note and signature " + i + " is: " + sum + ", returns " + (sum<0.01));
 		
 		return (sum < 0.01);
 	}
@@ -381,10 +375,10 @@ public class SoundProcessor{
     	return this.affs.get(lane);
     }
     
-    public AudioInputStream getAIS(byte[] bArray, int lane){
-    	ByteArrayInputStream bais = new ByteArrayInputStream(bArray);
+    public AudioInputStream getAIS(Signature sig, int lane){
+    	ByteArrayInputStream bais = new ByteArrayInputStream(sig.getBytes());
     	AudioInputStream outputAIS = new AudioInputStream(bais, afs.get(lane),
-                bArray.length / afs.get(lane).getFrameSize());
+                sig.getBytes().length / afs.get(lane).getFrameSize());
     	return outputAIS;
     }
     

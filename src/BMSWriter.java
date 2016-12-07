@@ -72,12 +72,12 @@ public class BMSWriter{
         
         try {
             for(int measure = 0; measure < nls.size(); measure++){
-                String[] tokenStringArray = nls.get(measure).compileNotes();
-                for (int lane = 0; lane < 8; lane++){
+                String[] tokenStringArray = nls.get(measure).compileNotes(fileStreams.size());
+                for (int lane = 0; lane < fileStreams.size(); lane++){
                     if(tokenStringArray[lane] != null){
                         //System.out.println("Printing lane " + getID(lane) + " in measure " + (measure+1));
                         if (!tokenStringArray[lane].equals("")){
-                            writer.write("#" + String.format("%03d",measure+1) + (getID(lane) < 0 ? "0" : "") + getID(lane) + ":" + tokenStringArray[lane]);
+                            writer.write("#" + String.format("%03d",measure+1) + (getID(lane) < 10 ? "0" : "") + getID(lane) + ":" + tokenStringArray[lane]);
                             writer.newLine();
                         }
                     }
@@ -85,15 +85,16 @@ public class BMSWriter{
                 writer.newLine();
             }
             
-            ArrayList<byte[]> sigsMaster = sp.getSignaturesMaster();
-            ArrayList<ArrayList<byte[]>> signatures = sp.getSignatures();
-            ArrayList<ArrayList<byte[]>> tails = sp.getTails();
+            ArrayList<Signature> sigsMaster = sp.getSignaturesMaster();
+            ArrayList<ArrayList<Signature>> signatures = sp.getSignatures();
+            ArrayList<ArrayList<Signature>> tails = sp.getTails();
             
             for(int lane = 0; lane < signatures.size(); lane++){
-            	ArrayList<byte[]> sigList = signatures.get(lane);
-            	ArrayList<byte[]> tailList = tails.get(lane);
+            	ArrayList<Signature> sigList = signatures.get(lane);
+            	ArrayList<Signature> tailList = tails.get(lane);
             	for(int num = 0; num < sigList.size(); num++){
-            		byte[] combinedArr = sp.combineArrays(sigList.get(num), tailList.get(num));
+            		Signature combinedArr = new Signature(sigList.get(num).getBytes(), lane);
+            		combinedArr.append(tailList.get(num).getBytes());
             		AudioInputStream ais = sp.getAIS(combinedArr, lane);
             		AudioFileFormat.Type targetFileType = sp.getAFF(lane).getType();
             		int noteIndex = sigsMaster.indexOf(sigList.get(num));

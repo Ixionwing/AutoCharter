@@ -26,17 +26,20 @@ public class NoteList{
         this.noteList.add(n);
     }
     
-    public String[] compileNotes(){
+    public String[] compileNotes(int size){
         // LCM for mixed intervals: 48
         // 0-6 = lanes 1-7
         // 7 = SC lane
         
-        String[] lanes = {"","","","","","","",""};
+        String[] lanes = new String[size];
         ArrayList<Note> tempList;
         int trueInterval = 16;
         int tokenDiv = 4;
         
-        for (int i = 0; i < 8;i++){
+        for (int i = 0; i < lanes.length; i++)
+        	lanes[i] = "";
+        
+        for (int i = 0; i < size;i++){
             tempList = new ArrayList<Note>();
             trueInterval = 16;
             tokenDiv = 4;
@@ -98,7 +101,7 @@ public class NoteList{
                 }
                 else lanes[i] += "00";
             }
-            //System.out.println("result for lane " + i + ": " + lanes[i]);
+            System.out.println("result for lane " + i + ": " + lanes[i]);
         }
         
         return lanes;
