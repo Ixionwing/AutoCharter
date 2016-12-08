@@ -93,8 +93,8 @@ public class BMSWriter{
             	ArrayList<Signature> sigList = signatures.get(lane);
             	ArrayList<Signature> tailList = tails.get(lane);
             	for(int num = 0; num < sigList.size(); num++){
-            		Signature combinedArr = new Signature(sigList.get(num).getBytes(), lane);
-            		combinedArr.append(tailList.get(num).getBytes());
+            		Signature combinedArr = new Signature(sigList.get(num).getFloats(), lane);
+            		combinedArr.append(tailList.get(num).getFloats());
             		AudioInputStream ais = sp.getAIS(combinedArr, lane);
             		AudioFileFormat.Type targetFileType = sp.getAFF(lane).getType();
             		int noteIndex = sigsMaster.indexOf(sigList.get(num));

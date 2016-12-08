@@ -1,7 +1,6 @@
-/******************************************************************************
+ /******************************************************************************
  *                                                                            *
  * Copyright (c) 1999-2003 Wimba S.A., All Rights Reserved.                   *
- * (Modified by G. Teng for use with AutoCharter)							  *
  *                                                                            *
  * COPYRIGHT:                                                                 *
  *      This software is the property of Wimba S.A.                           *
@@ -34,60 +33,6 @@
  *                                                                            *
  ******************************************************************************/
 
-/* $Id: Lpc.java,v 1.2 2004/10/21 16:21:57 mgimpel Exp $ */
-
-/*
-  Copyright 1992, 1993, 1994 by Jutta Degener and Carsten Bormann,
-  Technische Universitaet Berlin
-
-  Any use of this software is permitted provided that this notice is not
-  removed and that neither the authors nor the Technische Universitaet Berlin
-  are deemed to have made any representations as to the suitability of this
-  software for any purpose nor are held responsible for any defects of
-  this software.  THERE IS ABSOLUTELY NO WARRANTY FOR THIS SOFTWARE.
-
-  As a matter of courtesy, the authors request to be informed about uses
-  this software has found, about bugs in this software, and about any
-  improvements that may be of general interest.
-
-  Berlin, 28.11.1994
-  Jutta Degener
-  Carsten Bormann
-
-
-   Code slightly modified by Jean-Marc Valin
-
-   Speex License:
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-   
-   - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-   
-   - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-   
-   - Neither the name of the Xiph.org Foundation nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-   
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
-//package org.xiph.speex;
 
 /**
  * LPC - and Reflection Coefficients.
@@ -101,7 +46,7 @@
  * @author Marc Gimpel, Wimba S.A. (mgimpel@horizonwimba.com)
  * @version $Revision: 1.2 $
  */
-public class LPC
+public class Lpc
 {
   /**
    * Returns minimum mean square error.
@@ -111,13 +56,13 @@ public class LPC
    * @param p
    * @return minimum mean square error.
    */
-  public static double wld(final double[] lpc,
-                          final double[] ac,
-                          final double[] ref,
+  public static float wld(final float[] lpc,
+                          final float[] ac,
+                          final float[] ref,
                           final int p)
   {
     int i, j;
-    double r, error = ac[0];
+    float r, error = ac[0];
     if (ac[0] == 0) {
       for (i=0; i<p; i++)
         ref[i] = 0;
@@ -131,7 +76,7 @@ public class LPC
       /*  Update LPC coefficients and total error. */
       lpc[i] = r;
       for (j = 0; j < i/2; j++) {
-        double tmp  = lpc[j];
+        float tmp  = lpc[j];
         lpc[j]     += r * lpc[i-1-j];
         lpc[i-1-j] += r * tmp;
       }
@@ -153,16 +98,16 @@ public class LPC
    * @param lag
    * @param n
    */
-  public static void autocorr(final byte[] x,
-                              final double[] ac,
+  public static void autocorr(final float[] x,
+                              final float[] ac,
                               int lag,
                               final int n)
   {
-    double d;
+    float d;
     int i;
     while (lag-- > 0) {
       for (i=lag, d=0; i<n; i++)
-        d += (double)x[i] * (double)x[i-lag];
+        d += x[i] * x[i-lag];
       ac[lag] = d;
     }
   }

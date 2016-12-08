@@ -1,21 +1,21 @@
 
 public class Signature {
-	private byte[] bytes;
+	private float[] floats;
 	private int lane;
 	private boolean complete;
 	
-	public Signature(byte[] bytes, int lane) {
-		this.bytes = bytes;
+	public Signature(float[] floats, int lane) {
+		this.floats = floats;
 		this.lane = lane;
 		this.complete = false;
 	}
 
-	public byte[] getBytes() {
-		return bytes;
+	public float[] getFloats() {
+		return floats;
 	}
 
-	public void setBytes(byte[] bytes) {
-		this.bytes = bytes;
+	public void setFloats(float[] floats) {
+		this.floats = floats;
 	}
 
 	public int getLane() {
@@ -26,6 +26,7 @@ public class Signature {
 		this.lane = lane;
 	}
 	
+	
 	public boolean isComplete(){
 		return complete;
 	}
@@ -35,35 +36,35 @@ public class Signature {
 	}
 	
 
-	public void append (byte[] arr1){
-		byte[] newArr;
-		if (this.bytes == null){
-			this.bytes = arr1;
+	public void append (float[] arr1){
+		float[] newArr;
+		if (this.floats == null){
+			this.floats = arr1;
 		}
 		else{
-			newArr = new byte[this.bytes.length + arr1.length];
+			newArr = new float[this.floats.length + arr1.length];
 			
-			System.arraycopy(this.bytes, 0, newArr, 0, this.bytes.length);
-			System.arraycopy(arr1, 0, newArr, this.bytes.length, arr1.length);
+			System.arraycopy(this.floats, 0, newArr, 0, this.floats.length);
+			System.arraycopy(arr1, 0, newArr, this.floats.length, arr1.length);
 			
-			this.bytes = newArr;
+			this.floats = newArr;
 		}
 		
 		
 	}
 	
 	public void append (Signature sig){
-		byte[] newArr;
+		float[] newArr;
 		
-		if (this.bytes == null){
-			this.bytes = sig.getBytes();
+		if (this.floats == null){
+			this.floats = sig.getFloats();
 		}
 		else {
-			newArr = new byte[this.bytes.length + sig.getBytes().length];
-			System.arraycopy(this.bytes, 0, newArr, 0, this.bytes.length);
-			System.arraycopy(sig.getBytes(), 0, newArr, this.bytes.length, sig.getBytes().length);
+			newArr = new float[this.floats.length + sig.getFloats().length];
+			System.arraycopy(this.floats, 0, newArr, 0, this.floats.length);
+			System.arraycopy(sig.getFloats(), 0, newArr, this.floats.length, sig.getFloats().length);
 			
-			this.bytes = newArr;
+			this.floats = newArr;
 		}
 	}
 	
