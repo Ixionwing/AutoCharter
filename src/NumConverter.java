@@ -3,9 +3,9 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.nio.IntBuffer;
 
-public class Converter {
+public class NumConverter {
 	
-	public Converter(){
+	public NumConverter(){
 	
 	}
 	
@@ -86,4 +86,13 @@ public class Converter {
 		else return null;
 	}
 	
+	public static byte[] floatsToByte(float[] floats, boolean isBigEndian, int sampleSize){
+		if (sampleSize == 16){
+			return shortsToByte(floatsToShort(floats), isBigEndian);
+		}
+		else if (sampleSize == 32){
+			return intsToByte(floatsToInt(floats), isBigEndian);
+		}
+		else return null;
+	}
 }
