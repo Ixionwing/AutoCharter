@@ -97,7 +97,7 @@ public class SoundProcessor{
                                 }
                                 chunk = NumConverter.bytesToFloat(rawChunk, afs.get(lane).isBigEndian(), afs.get(lane).getSampleSizeInBits());
 								if(!foundNotes[lane]){ // if it's the very first note in each lane
-									if(getTotalAmp(chunk) >= 500){
+									if(getTotalAmp(chunk) >= 150){
 										foundNotes[lane] = true;
                                         addSignature(chunk, lane);
                                         System.out.println("Adding note of sample " + signaturesMaster.size());
@@ -110,9 +110,9 @@ public class SoundProcessor{
 								
 								else{
 									newChunkFirstHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
-                                    //if (lane == 4 && measure >= 12 && measure <= 13) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens + " ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] + " th: " + (int)(newChunkFirstHalf[lane] * (0.92)));
+                                    //if (lane == 1 && measure >= 1 && measure <= 2) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens + " ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] + " th: " + (int)(newChunkFirstHalf[lane] * (0.92)));
 									// TODO: fix > threshold
-                                    if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 300 ){
+                                    if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 100 ){
                                     	System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                     	int[] sigcheck = compareSignatures(chunk);
                                         
@@ -160,7 +160,7 @@ public class SoundProcessor{
                                     			}
                                     			else{
                                     				appendee = new Signature(Arrays.copyOf(chunk, cutoff), lane);
-                                        			//System.out.println("Tail complete!");
+                                        			System.out.println("Tail complete!");
                                         			masterTail.setComplete(true);
                                     			}
                                     			masterTail.append(appendee);
@@ -174,7 +174,7 @@ public class SoundProcessor{
                                     }
 									
 								}
-								prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)byteArraySize[lane]/2, (int)byteArraySize[lane]));
+								prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
                                 //if (prevChunkSecondHalf[lane] < 20000 && prevChunkSecondHalf[lane] > 5000 && lane == 2)
                                 //    System.out.println("pcsh at this point is: " + prevChunkSecondHalf[lane]);
                                 /*if (prevChunkSecondHalf < 20000 && prevChunkSecondHalf > 1000 && lane == 2){
@@ -200,18 +200,18 @@ public class SoundProcessor{
 			//if (i<100) System.out.print(b[i] + " ");
 			total += Math.abs(b[i]);
 		}
-		
+		//System.out.println("Total amp is: " + total);
 		return total;
 	}
 	
 	public int getTotalAmp(float[] f){
-		int total = 0;
+		float total = 0;
 		
 		for(int i = 0; i < f.length; i++){
-			total += (int)Math.abs(f[i]);
+			total += Math.abs(f[i]);
 		}
-		
-		return total;
+		//System.out.println("Total amp is: " + (int)total);
+		return (int)total;
 	}
 	
 	public boolean checkIfEnd(int[] n, int filenum){
@@ -286,11 +286,11 @@ public class SoundProcessor{
 		}
 		
 
-		System.out.println("Sum of LPC is: " + sum + ", returns " + (sum<0.01));
+		System.out.println("Sum of LPC is: " + sum + ", returns " + (sum<1));
 		
-		//TODO: Check pitch if 0.005 < sum < 0.01
+		//TODO: Check pitch if 0.5 < sum < 1
 		
-		return sum < 0.01;
+		return sum < 1;
 	}
 	
 	public boolean matchLPC(float[] chunk, int i, int j){
@@ -314,11 +314,11 @@ public class SoundProcessor{
 			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
 		}
 		
-		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (sum<0.01));
+		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (sum<1));
 		
 		//TODO: Check pitch if 0.005 < sum < 0.01
 		
-		return (sum < 0.01);
+		return (sum < 1);
 	}
 	
 	/*

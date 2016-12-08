@@ -42,15 +42,17 @@ public class Signature {
 			this.floats = arr1;
 		}
 		else{
-			newArr = new float[this.floats.length + arr1.length];
-			
-			System.arraycopy(this.floats, 0, newArr, 0, this.floats.length);
-			System.arraycopy(arr1, 0, newArr, this.floats.length, arr1.length);
-			
-			this.floats = newArr;
+			if (arr1 != null){
+				newArr = new float[this.floats.length + arr1.length];
+				
+				System.arraycopy(this.floats, 0, newArr, 0, this.floats.length);
+				System.arraycopy(arr1, 0, newArr, this.floats.length, arr1.length);
+				
+				this.floats = newArr;
+			}
 		}
-		
-		
+
+		//System.out.println("Append successful! Lane + " + lane + " with length " + floats.length);
 	}
 	
 	public void append (Signature sig){
@@ -60,12 +62,16 @@ public class Signature {
 			this.floats = sig.getFloats();
 		}
 		else {
-			newArr = new float[this.floats.length + sig.getFloats().length];
-			System.arraycopy(this.floats, 0, newArr, 0, this.floats.length);
-			System.arraycopy(sig.getFloats(), 0, newArr, this.floats.length, sig.getFloats().length);
-			
-			this.floats = newArr;
+			if (sig.getFloats() != null){
+				newArr = new float[this.floats.length + sig.getFloats().length];
+				System.arraycopy(this.floats, 0, newArr, 0, this.floats.length);
+				System.arraycopy(sig.getFloats(), 0, newArr, this.floats.length, sig.getFloats().length);
+				
+				this.floats = newArr;
+			}
 		}
+		
+		//System.out.println("Append successful! Lane " + lane + " with length " + floats.length);
 	}
 	
 }
