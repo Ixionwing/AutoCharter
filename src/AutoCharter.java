@@ -36,27 +36,32 @@ public class AutoCharter{
 		System.out.println("All lanes beyond 8 will be placed in the background.");
 		System.out.println("Input up to 36 filenames, including extension (exit with 0): ");
 		for(int i = 0; i<36; i++){
+			if (i==8) System.out.println("[WARNING] All files beyond this point will be placed in the background lanes.");
 			temp = scan.nextLine();
 			if(!(temp.equals("0"))){
-				audioFilenames.add(temp);
+				System.out.println("Importing file " + temp);
+				try{
+					audioFilenames.add(temp);
+					fileTemp.add(new File(temp));
+					if(temp.endsWith(".mp3")){
+						converter.convert(fileTemp.get(fileTemp.size()-1).getAbsolutePath(), fileTemp.get(fileTemp.size()-1).getAbsolutePath().replace(".mp3", ".wav"));
+						fileTemp.set(fileTemp.size()-1, new File(audioFilenames.get(fileTemp.size()-1).replace(".mp3", ".wav")));
+						fileTemp.get(fileTemp.size()-1).deleteOnExit();
+					}
+					files.add(AudioSystem.getAudioInputStream(fileTemp.get(fileTemp.size()-1)));
+					System.out.println("File imported!");
+				} catch (Exception e){
+					System.out.println("Invalid file name! Please try again.");
+					audioFilenames.remove(audioFilenames.size()-1);
+					if (fileTemp.size() > audioFilenames.size()) fileTemp.remove(fileTemp.size()-1);
+					if (files.size() > audioFilenames.size()) files.remove(files.size()-1);
+					i--;
+				}
 			}
 			else break;
 		}
 		
 		try{
-		System.out.println("Size is: " + audioFilenames.size());
-		for(int j = 0; j < audioFilenames.size(); j++){
-			System.out.println("Importing file " + audioFilenames.get(j));
-			fileTemp.add(new File(audioFilenames.get(j)));
-			
-			if(audioFilenames.get(j).endsWith(".mp3")){
-				converter.convert(fileTemp.get(j).getAbsolutePath(), fileTemp.get(j).getAbsolutePath().replace(".mp3", ".wav"));
-				fileTemp.set(j, new File(audioFilenames.get(j).replace(".mp3", ".wav")));
-				fileTemp.get(j).deleteOnExit();
-			}
-			files.add(AudioSystem.getAudioInputStream(fileTemp.get(j)));
-			System.out.println("File imported!");
-		}
 		writer = new BMSWriter(info.get(0), audioFilenames);
 		
 		writer.constructBaseBMS(info, bpm);

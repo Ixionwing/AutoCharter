@@ -110,9 +110,10 @@ public class SoundProcessor{
 								
 								else{
 									newChunkFirstHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
+									System.out.println("ncfh: " + newChunkFirstHalf[lane]);
                                     //if (lane == 1 && measure >= 1 && measure <= 2) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens + " ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] + " th: " + (int)(newChunkFirstHalf[lane] * (0.92)));
 									// TODO: fix > threshold
-                                    if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 100 ){
+                                    if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 150 ){
                                     	System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                     	int[] sigcheck = compareSignatures(chunk);
                                         
@@ -141,7 +142,7 @@ public class SoundProcessor{
                                     	if(newChunkFirstHalf[lane] != 0){
                                     		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new byte[8])); // look for a series of 4 empty 16bit values
                                     		int sigMasterIndex =  tempList.getList().get(lastNote).getSample()-1;
-                                    		System.out.println("Last note of the measure is " + sigMasterIndex + "... now looking for it in signatures of lane " + lane + ", size " + signatures.get(lane).size());
+                                    		System.out.println("Last note of the measure is " + sigMasterIndex + " of " + signaturesMaster.size() + "... now looking for it in signatures of lane " + lane + ", size " + signatures.get(lane).size());
                                 			int sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
                                     		
                                 			/*System.out.print("Tails for lane " + lane + ": ");
@@ -160,7 +161,7 @@ public class SoundProcessor{
                                     			}
                                     			else{
                                     				appendee = new Signature(Arrays.copyOf(chunk, cutoff), lane);
-                                        			System.out.println("Tail complete!");
+                                        			//System.out.println("Tail complete!");
                                         			masterTail.setComplete(true);
                                     			}
                                     			masterTail.append(appendee);
@@ -286,7 +287,7 @@ public class SoundProcessor{
 		}
 		
 
-		System.out.println("Sum of LPC is: " + sum + ", returns " + (sum<1));
+		//System.out.println("Sum of LPC is: " + sum + ", returns " + (sum<1));
 		
 		//TODO: Check pitch if 0.5 < sum < 1
 		
@@ -314,7 +315,7 @@ public class SoundProcessor{
 			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
 		}
 		
-		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (sum<1));
+		//System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (sum<1));
 		
 		//TODO: Check pitch if 0.005 < sum < 0.01
 		
