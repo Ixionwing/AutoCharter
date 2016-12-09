@@ -16,7 +16,7 @@ public class AutoCharter{
         BMSWriter writer;
 		Converter converter = new Converter();
 		
-		System.out.print("Input the chart's to-be filename (program automatically includes .bme extension: ");
+		System.out.print("Input the chart's to-be filename (program automatically includes .bme extension): ");
 		info.add(scan.nextLine());
 		info.set(0, info.get(0) + ".bme");
 		System.out.println("Input the song's genre: ");

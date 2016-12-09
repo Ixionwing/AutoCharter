@@ -40,6 +40,8 @@ public class SoundProcessor{
 			float[] chunk;
 			int[] newChunkFirstHalf = new int[fileStreams.size()];
 			int[] prevChunkSecondHalf = new int[fileStreams.size()];
+			int[] ncfhFreq = new int[fileStreams.size()];
+			int[] pcshFreq = new int[fileStreams.size()];
 			double sixteenthLength;
 			boolean[] foundNotes = new boolean[fileStreams.size()];
 			int[] lastNote = new int[fileStreams.size()]; // keeps track of the index of the last note confirmed in each measure
@@ -111,13 +113,19 @@ public class SoundProcessor{
 								
 								else{
 									newChunkFirstHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
+									ncfhFreq[lane] = getFreq(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
+									
 									//newChunkFirstHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
 									//System.out.println("ncfh: " + newChunkFirstHalf[lane]);
-                                    if (lane == 1) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens +
+                                    /*if (lane == 0) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens +
                                     		" ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] +
                                     		" th: " + (int)(newChunkFirstHalf[lane] * (0.92) - prevChunkSecondHalf[lane]) + "/" +  (-(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15));
+									*/
+									System.out.println("m" + measure + "l" + lane + "p" + tokens + " ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] + " " + Math.abs((double)newChunkFirstHalf[lane]/(double)prevChunkSecondHalf[lane]));
+									System.out.println("freqs: " + ncfhFreq[lane] + " " + pcshFreq[lane]);
 									// TODO: fix > threshold
-                                    if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 100 ){
+                                    //if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 100 ){
+                                    if (newChunkFirstHalf[lane] > prevChunkSecondHalf[lane] && (prevChunkSecondHalf[lane] == 0 || Math.abs((double)newChunkFirstHalf[lane]/(double)prevChunkSecondHalf[lane]) > 2)){
                                     	System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                     	int[] sigcheck = compareSignatures(chunk, lane);
                                         
@@ -144,7 +152,7 @@ public class SoundProcessor{
                                     
                                     else{
                                     	if(newChunkFirstHalf[lane] != 0){
-                                    		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new byte[8])); // look for a series of 4 empty 16bit values
+                                    		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new float[4])); // look for a series of 4 empty float values
                                     		int sigMasterIndex =  tempList.getList().get(tempList.getList().size()-1).getSample()-1;
                                     		System.out.println("Last note of the lane is " + sigMasterIndex + " (lane " + signaturesMaster.get(sigMasterIndex).getLane() + ") of " + signaturesMaster.size() + "... now looking for it in signatures of lane " + lane + ", size " + signatures.get(lane).size());
                                 			int sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
@@ -178,6 +186,7 @@ public class SoundProcessor{
 									
 								}
 								prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
+								pcshFreq[lane] = getFreq(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
 								//prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
                                 
 								
@@ -193,7 +202,7 @@ public class SoundProcessor{
 						}
 					}
                 }
-                checkEOF = checkIfEnd(n, fileStreams.size());
+                checkEOF = checkIfEnd(byteArraySize, fileStreams.size());
             }
         //System.out.println("noteLists count: " + noteLists.size());
         return noteLists;
@@ -222,13 +231,45 @@ public class SoundProcessor{
 		return (int)total;
 	}
 	
-	public boolean checkIfEnd(int[] n, int filenum){
-		boolean x = true;
+	public int getFreq(byte[] b){
+		int total = 0;
+		
+		for(int i = 0; i < b.length-1; i++){
+			if((b[i] > 0 && b[i] > b[i+1]) || (b[i] < 0 && b[i] < b[i+1]) )
+				total++;
+		}
+		return total;
+	}
+	
+	public int getFreq(float[] f){
+		int total = 0;
+		boolean mode = (f[0] < f[1]);
+		
+		for(int i = 0; i < f.length-1; i++){
+			/*if((f[i] > 0 && f[i] > f[i+1]) || (f[i] < 0 && f[i] < f[i+1]) )
+				total++;
+			*/
+			if ((mode && f[i] > f[i+1]) || (!mode && f[i] < f[i+1])){
+				total++;
+				mode = !mode;
+			}
+		}
+		return total; 
+	}
+	
+	public boolean checkIfEnd(double[] byteArraySize, int filenum){
+		boolean x = false;
 		for(int i = 0; i < filenum; i++){
-			if (n[i] == -1)
-				x = x && true;
-			else
-				x = x && false;
+			try{
+				//System.out.println("byte array size " + byteArraySize[i] + " available " + fileStreams.get(i).available());
+				if (fileStreams.get(i).available() < byteArraySize[i])
+					x = x || true;
+				else
+					x = x || false;
+				} catch (Exception e){
+					e.printStackTrace();
+					System.exit(1);
+			}
 		}
 		
 		return x;
