@@ -1,8 +1,13 @@
 import java.io.*;
 import javax.sound.sampled.*;
 import java.util.*;
-
-//TODO: Convert byte arrays to float arrays in preparation for pitch detection
+import be.tarsos.dsp.AudioDispatcher;
+import be.tarsos.dsp.AudioEvent;
+import be.tarsos.dsp.io.jvm.JVMAudioInputStream;
+import be.tarsos.dsp.pitch.PitchDetectionHandler;
+import be.tarsos.dsp.pitch.PitchDetectionResult;
+import be.tarsos.dsp.pitch.PitchProcessor;
+import be.tarsos.dsp.pitch.PitchProcessor.PitchEstimationAlgorithm;
 
 public class SoundProcessor{
     private ArrayList<AudioInputStream> fileStreams;
@@ -14,6 +19,7 @@ public class SoundProcessor{
     private ArrayList<ArrayList<Signature>> tails;
     private ArrayList<AudioFormat> afs;
     private ArrayList<AudioFileFormat> affs;
+    boolean debug = false;
     
     public SoundProcessor(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm){
         this.fileStreams = fileStreams;
@@ -38,8 +44,8 @@ public class SoundProcessor{
 			double[] byteArraySize = new double[fileStreams.size()];
 			byte[] rawChunk;
 			float[] chunk;
-			int[] newChunkFirstHalf = new int[fileStreams.size()];
-			int[] prevChunkSecondHalf = new int[fileStreams.size()];
+			int[] ncfhEnergy = new int[fileStreams.size()];
+			int[] pcshEnergy = new int[fileStreams.size()];
 			int[] ncfhFreq = new int[fileStreams.size()];
 			int[] pcshFreq = new int[fileStreams.size()];
 			double sixteenthLength;
@@ -112,20 +118,26 @@ public class SoundProcessor{
 								}
 								
 								else{
-									newChunkFirstHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
+									ncfhEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
 									ncfhFreq[lane] = getFreq(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
 									
-									//newChunkFirstHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
-									//System.out.println("ncfh: " + newChunkFirstHalf[lane]);
+									//ncfhEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
+									//System.out.println("ncfh: " + ncfhEnergy[lane]);
                                     /*if (lane == 0) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens +
-                                    		" ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] +
-                                    		" th: " + (int)(newChunkFirstHalf[lane] * (0.92) - prevChunkSecondHalf[lane]) + "/" +  (-(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15));
+                                    		" ncfh: " + ncfhEnergy[lane] + " pcsh: " + pcshEnergy[lane] +
+                                    		" th: " + (int)(ncfhEnergy[lane] * (0.92) - pcshEnergy[lane]) + "/" +  (-(ncfhEnergy[lane] - pcshEnergy[lane])*0.15));
 									*/
-									System.out.println("m" + measure + "l" + lane + "p" + tokens + " ncfh: " + newChunkFirstHalf[lane] + " pcsh: " + prevChunkSecondHalf[lane] + " " + Math.abs((double)newChunkFirstHalf[lane]/(double)prevChunkSecondHalf[lane]));
+									System.out.println("m" + measure + "l" + lane + "p" + tokens + " ncfh: " + ncfhEnergy[lane] + " pcsh: " + pcshEnergy[lane] + " " + Math.abs((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]));
 									System.out.println("freqs: " + ncfhFreq[lane] + " " + pcshFreq[lane]);
-									// TODO: fix > threshold
-                                    //if (((newChunkFirstHalf[lane] * (0.92)) - prevChunkSecondHalf[lane]) > -(newChunkFirstHalf[lane] - prevChunkSecondHalf[lane])*0.15 && newChunkFirstHalf[lane] > 100 ){
-                                    if (newChunkFirstHalf[lane] > prevChunkSecondHalf[lane] && (prevChunkSecondHalf[lane] == 0 || Math.abs((double)newChunkFirstHalf[lane]/(double)prevChunkSecondHalf[lane]) > 2)){
+									boolean cond1 = (pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 1.55));
+									boolean cond2 = (ncfhEnergy[lane] > 100 && pcshEnergy[lane] == 0);
+									boolean cond3 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] > 25 && pcshFreq[lane] != 0 && ((double)ncfhFreq[lane]/(double)pcshFreq[lane]) >= 2.0);
+									System.out.print("Cond 1: " + cond1);
+									System.out.print(" Cond 2: " + cond2);
+									System.out.println(" Cond 3: " + cond3);
+									// TODO: fix thresholds
+                                    //if (((ncfhEnergy[lane] * (0.92)) - pcshEnergy[lane]) > -(ncfhEnergy[lane] - pcshEnergy[lane])*0.15 && ncfhEnergy[lane] > 100 ){
+                                    if (cond1 || cond2 || cond3){
                                     	System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                     	int[] sigcheck = compareSignatures(chunk, lane);
                                         
@@ -135,14 +147,16 @@ public class SoundProcessor{
                                     		addSignature(chunk, lane);
                                     		System.out.println("???Adding note of sample " + signaturesMaster.size());
                                     		tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
+                                    		lastNote[lane] = signaturesMaster.size();
                                     	}
                                     	else{
                                     		System.out.println("Signature match! Setting signature " + (signatures.get(lane).size()-1) + " to true");
                                         	tails.get(lane).get(tails.get(lane).size()-1).setComplete(true);
-                                        	int trueIndex = signaturesMaster.indexOf(signatures.get(sigcheck[0]).get(sigcheck[1]));
-                                    		tempList.addNote(new Note(tokens, lane, trueIndex+1));
+                                        	int trueIndex = signaturesMaster.indexOf(signatures.get(sigcheck[0]).get(sigcheck[1])) + 1;
+                                        	lastNote[lane] = trueIndex;
+                                        	System.out.println("added note index " + trueIndex);
+                                    		tempList.addNote(new Note(tokens, lane, trueIndex));
                                     	}
-                                    	lastNote[lane] = tempList.getList().size()-1;
                                     	lastMeasure[lane] = measure;
                                     	/*System.out.println("Tails for lane " + lane + ": ");
                                 		for(Signature tailItem : tails.get(lane))
@@ -151,13 +165,18 @@ public class SoundProcessor{
 									}
                                     
                                     else{
-                                    	if(newChunkFirstHalf[lane] != 0){
+                                    	if(ncfhEnergy[lane] != 0){
                                     		int cutoff = Collections.indexOfSubList(Arrays.asList(chunk), Arrays.asList(new float[4])); // look for a series of 4 empty float values
-                                    		int sigMasterIndex =  tempList.getList().get(tempList.getList().size()-1).getSample()-1;
-                                    		System.out.println("Last note of the lane is " + sigMasterIndex + " (lane " + signaturesMaster.get(sigMasterIndex).getLane() + ") of " + signaturesMaster.size() + "... now looking for it in signatures of lane " + lane + ", size " + signatures.get(lane).size());
-                                			int sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
-                                    		
-                                			//TODO: If sigIndex is -1, it has found a false positive in another lane.
+	                                    	int sigIndex = 0;
+	                                    	int sigMasterIndex = lastNote[lane]-1;
+                                    		if (tempList.getList().size() > 0){
+                                    			sigMasterIndex =  tempList.getList().get(tempList.getList().size()-1).getSample()-1;
+	                                    		System.out.println("Last note of the lane is " + sigMasterIndex + " (lane " + signaturesMaster.get(sigMasterIndex).getLane() + ") of " + signaturesMaster.size() + "... now looking for it in signatures of lane " + lane + ", size " + signatures.get(lane).size());
+	                                			sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(sigMasterIndex));
+                                    		}
+	                                    	else {
+	                                    		sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(lastNote[lane]-1));
+	                                    	}
                                 			
                                 			System.out.println(sigIndex);
                                     		if (!tails.get(lane).get(sigIndex).isComplete()){
@@ -185,14 +204,14 @@ public class SoundProcessor{
                                     }
 									
 								}
-								prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
+								pcshEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
 								pcshFreq[lane] = getFreq(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
-								//prevChunkSecondHalf[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
+								//pcshEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
                                 
 								
-								//if (prevChunkSecondHalf[lane] < 20000 && prevChunkSecondHalf[lane] > 5000 && lane == 2)
-                                //    System.out.println("pcsh at this point is: " + prevChunkSecondHalf[lane]);
-                                /*if (prevChunkSecondHalf < 20000 && prevChunkSecondHalf > 1000 && lane == 2){
+								//if (pcshEnergy[lane] < 20000 && pcshEnergy[lane] > 5000 && lane == 2)
+                                //    System.out.println("pcsh at this point is: " + pcshEnergy[lane]);
+                                /*if (pcshEnergy < 20000 && pcshEnergy > 1000 && lane == 2){
                                     for (int z = 0; z < 4; z++){
                                         //System.out.println("Chunk length: " + chunk.length);
                                         //System.out.println("Position in chunk: " + (((int)byteArraySize[lane]/2) + (z*(int)byteArraySize[lane]/8)));
@@ -249,7 +268,7 @@ public class SoundProcessor{
 			/*if((f[i] > 0 && f[i] > f[i+1]) || (f[i] < 0 && f[i] < f[i+1]) )
 				total++;
 			*/
-			if ((mode && f[i] > f[i+1]) || (!mode && f[i] < f[i+1])){
+			if ((mode && f[i] > f[i+1] && f[i] > 0) || (!mode && f[i] < f[i+1] && f[i] < 0)){
 				total++;
 				mode = !mode;
 			}
@@ -313,8 +332,12 @@ public class SoundProcessor{
 		return new int[]{-1,-1};
 	}
 	
+	
+	// TODO: Detect pitch with Tarsos YIN
+	// TODO: Account for drift?
 	public boolean matchLPC(float[] chunk1, float[] chunk2){
 		int lag = 16;
+		float threshold = 1.0f;
 		float[] chunk1AC = new float[lag];
 		float[] chunk2AC = new float[lag];
 		float[] chunk1LPC = new float[lag-1];
@@ -334,16 +357,25 @@ public class SoundProcessor{
 			sum += Math.pow((chunk1LPC[k] - chunk2LPC[k]), 2);
 		}
 		
+		boolean result = sum<threshold;
+		System.out.println("Sum of LPC is: " + sum + ", returns " + (result));
+		if (!result){
+			for (int k = 0; k < lag-1; k++){
+				System.out.print(chunk1LPC[k] + "|");
+			}
+			System.out.println();
+			for (int k = 0; k < lag-1; k++){
+				System.out.print(chunk2LPC[k] + "|");
+			}
+			System.out.println();
+		}
 
-		System.out.println("Sum of LPC is: " + sum + ", returns " + (sum<1));
-		
-		//TODO: Check pitch if 0.5 < sum < 1
-		
-		return sum < 1;
+		return result;
 	}
 	
 	public boolean matchLPC(float[] chunk, int i, int j){
 		int lag = 16;
+		float threshold = 1.0f;
 		float[] chunkAC = new float[lag];
 		float[] sigAC = new float[lag];
 		float[] chunkLPC = new float[lag-1];
@@ -354,18 +386,8 @@ public class SoundProcessor{
 		Lpc.autocorr(chunk, chunkAC, lag, chunk.length);
 		Lpc.autocorr(signatures.get(i).get(j).getFloats(), sigAC, lag, signatures.get(i).get(j).getFloats().length);
 		
-		Lpc.wld(chunkLPC, chunkAC, chunkref, lag-1);
-		Lpc.wld(sigLPC, sigAC, sigref, lag-1);
-		
-		/*for(int x = 0; x < lag-1; x++)
-			System.out.print(chunkLPC[x] + "|");
-		
-		System.out.println();
-		
-		for(int x = 0; x < lag-1; x++)
-			System.out.print(sigLPC[x] + "|");
-		*/
-		System.out.println();
+		float chunkMSE = Lpc.wld(chunkLPC, chunkAC, chunkref, lag-1);
+		float sigMSE = Lpc.wld(sigLPC, sigAC, sigref, lag-1);
 		
 		float sum = 0;
 		
@@ -373,11 +395,24 @@ public class SoundProcessor{
 			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
 		}
 		
-		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (sum<1));
+		boolean result = sum<threshold;
 		
-		//TODO: Check pitch if 0.005 < sum < 0.01
-		
-		return (sum < 1);
+		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (result));
+		if (debug){
+			System.out.println("chunkMSE: " + chunkMSE);
+			System.out.println("sigMSE: " + sigMSE);
+			if (!result){
+				for (int k = 0; k < lag-1; k++){
+					System.out.print(chunkLPC[k] + "|");
+				}
+				System.out.println();
+				for (int k = 0; k < lag-1; k++){
+					System.out.print(sigLPC[k] + "|");
+				}
+				System.out.println();
+			}
+		}
+		return (result);
 	}
 	
 	/*
