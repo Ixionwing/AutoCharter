@@ -66,8 +66,8 @@ public class BMSWriter{
 	
 	}
 
-    public void processAndNote(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm){
-        SoundProcessor sp = new SoundProcessor(fileStreams, files, bpm);
+    public void processAndNote(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm, int npIndex){
+        SoundProcessor sp = new SoundProcessor(fileStreams, files, bpm, npIndex);
         ArrayList<NoteList> nls = sp.process();
         
         try {

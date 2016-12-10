@@ -13,18 +13,20 @@ public class SoundProcessor{
     private ArrayList<AudioInputStream> fileStreams;
     private ArrayList<File> files;
     private int bpm;
+    private int npIndex;
     private ArrayList<Signature> signaturesMaster;
     private ArrayList<Signature> tailsMaster;
     private ArrayList<ArrayList<Signature>> signatures;
     private ArrayList<ArrayList<Signature>> tails;
     private ArrayList<AudioFormat> afs;
     private ArrayList<AudioFileFormat> affs;
-    boolean debug = false;
+    boolean debug = true;
     
-    public SoundProcessor(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm){
+    public SoundProcessor(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm, int npIndex){
         this.fileStreams = fileStreams;
         this.files = files;
         this.bpm = bpm;
+        this.npIndex = npIndex;
         signatures = new ArrayList<ArrayList<Signature>>();
         tails = new ArrayList<ArrayList<Signature>>();
         for (int i = 0; i < 8; i++){
@@ -273,7 +275,7 @@ public class SoundProcessor{
 				mode = !mode;
 			}
 		}
-		return total; 
+		return total;
 	}
 	
 	public boolean checkIfEnd(double[] byteArraySize, int filenum){
@@ -337,7 +339,7 @@ public class SoundProcessor{
 	// TODO: Account for drift?
 	public boolean matchLPC(float[] chunk1, float[] chunk2){
 		int lag = 16;
-		float threshold = 1.0f;
+		
 		float[] chunk1AC = new float[lag];
 		float[] chunk2AC = new float[lag];
 		float[] chunk1LPC = new float[lag-1];
@@ -352,6 +354,7 @@ public class SoundProcessor{
 		Lpc.wld(chunk2LPC, chunk2AC, chunk2ref, lag-1);
 		
 		float sum = 0;
+		float threshold = 1.0f;
 		
 		for (int k = 0; k < lag-1; k++){
 			sum += Math.pow((chunk1LPC[k] - chunk2LPC[k]), 2);
@@ -375,7 +378,6 @@ public class SoundProcessor{
 	
 	public boolean matchLPC(float[] chunk, int i, int j){
 		int lag = 16;
-		float threshold = 1.0f;
 		float[] chunkAC = new float[lag];
 		float[] sigAC = new float[lag];
 		float[] chunkLPC = new float[lag-1];
@@ -390,6 +392,7 @@ public class SoundProcessor{
 		float sigMSE = Lpc.wld(sigLPC, sigAC, sigref, lag-1);
 		
 		float sum = 0;
+		float threshold = (i < npIndex ? 2.0f : 1.0f);
 		
 		for (int k = 0; k < lag-1; k++){
 			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
@@ -401,7 +404,7 @@ public class SoundProcessor{
 		if (debug){
 			System.out.println("chunkMSE: " + chunkMSE);
 			System.out.println("sigMSE: " + sigMSE);
-			if (!result){
+			//if (!result){
 				for (int k = 0; k < lag-1; k++){
 					System.out.print(chunkLPC[k] + "|");
 				}
@@ -410,7 +413,7 @@ public class SoundProcessor{
 					System.out.print(sigLPC[k] + "|");
 				}
 				System.out.println();
-			}
+			//}
 		}
 		return (result);
 	}

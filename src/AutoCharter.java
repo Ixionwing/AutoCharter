@@ -11,6 +11,8 @@ public class AutoCharter{
 		ArrayList<File> fileTemp = new ArrayList<File>();
 		ArrayList<AudioInputStream> files = new ArrayList<AudioInputStream>(5);
 		int bpm;
+		int npIndex = 0;
+		boolean npIndexFlag = false;
 		String temp;
 		Scanner scan = new Scanner(System.in);
         BMSWriter writer;
@@ -33,13 +35,20 @@ public class AutoCharter{
 		
 		System.out.println("Recommended note designation: ");
 		System.out.println("Lane 1: File 1, bass/kick\nLane 2: File 2, high hat\nLane 3: File 3, snare/clap\nTurntable: File 4, cymbal/scratch");
-		System.out.println("All lanes beyond 8 will be placed in the background.");
+		System.out.println("Putting in all percussion files first, then switching out of percussion by entering [P] is recommended.");
+		System.out.println("Also, all lanes beyond 8 will be placed in the background.");
 		System.out.println("Input up to 36 filenames, including extension (exit with 0): ");
 		for(int i = 0; i<36; i++){
 			if (i==8) System.out.println("[WARNING] All files beyond this point will be placed in the background lanes.");
 			temp = scan.nextLine();
 			if(!(temp.equals("0"))){
 				System.out.println("Importing file " + temp);
+				if (!npIndexFlag && temp.toLowerCase().equals("p")){
+					npIndex = i;
+					i--;
+					npIndexFlag = true;
+					continue;
+				}
 				try{
 					audioFilenames.add(temp);
 					fileTemp.add(new File(temp));
@@ -61,11 +70,13 @@ public class AutoCharter{
 			else break;
 		}
 		
+		if (!npIndexFlag) npIndex = audioFilenames.size();
+		
 		try{
 		writer = new BMSWriter(info.get(0), audioFilenames);
 		
 		writer.constructBaseBMS(info, bpm);
-		writer.processAndNote(files, fileTemp, bpm);
+		writer.processAndNote(files, fileTemp, bpm, npIndex);
 		
 		System.out.println("Automatic generation complete! Now closing...");
 		
