@@ -107,7 +107,7 @@ public class SoundProcessor{
                                 }
                                 chunk = NumConverter.bytesToFloat(rawChunk, afs.get(lane).isBigEndian(), afs.get(lane).getSampleSizeInBits());
 								if(!foundNotes[lane]){ // if it's the very first note in each lane
-									int ta = getTotalAmp(chunk);
+									int ta = getTotalEnergy(chunk);
 									System.out.println("Total amp for first note in lane " + lane + ": " + ta);
 									if(ta >= 80){
 										foundNotes[lane] = true;
@@ -122,11 +122,11 @@ public class SoundProcessor{
 								}
 								
 								else{
-									ncfhEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
+									ncfhEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
 									//if (lane < npIndex)
 										ncfhFreq[lane] = getFreq(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
 									
-									//ncfhEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
+									//ncfhEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length));
 									//System.out.println("ncfh: " + ncfhEnergy[lane]);
                                     /*if (lane == 0) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens +
                                     		" ncfh: " + ncfhEnergy[lane] + " pcsh: " + pcshEnergy[lane] +
@@ -279,10 +279,10 @@ public class SoundProcessor{
                                     }
 									
 								}
-								pcshEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
+								pcshEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
 								//if (lane < npIndex)
 									pcshFreq[lane] = getFreq(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
-								//pcshEnergy[lane] = getTotalAmp(Arrays.copyOfRange(chunk, 0, chunk.length));
+								//pcshEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length));
                                 
 								
 								//if (pcshEnergy[lane] < 20000 && pcshEnergy[lane] > 5000 && lane == 2)
@@ -291,7 +291,7 @@ public class SoundProcessor{
                                     for (int z = 0; z < 4; z++){
                                         //System.out.println("Chunk length: " + chunk.length);
                                         //System.out.println("Position in chunk: " + (((int)byteArraySize[lane]/2) + (z*(int)byteArraySize[lane]/8)));
-                                        System.out.println(getTotalAmp(Arrays.copyOfRange(chunk, chunk.length/2 + z*chunk.length/8, chunk.length/2 + (z+1)*chunk.length/8)));
+                                        System.out.println(getTotalEnergy(Arrays.copyOfRange(chunk, chunk.length/2 + z*chunk.length/8, chunk.length/2 + (z+1)*chunk.length/8)));
                                     }
                                 }*/
 						}
@@ -302,7 +302,7 @@ public class SoundProcessor{
         return noteLists;
     }
     	
-	public int getTotalAmp(byte[] b){
+	public int getTotalEnergy(byte[] b){
 		int total = 0;
 		//System.out.println("Chunk length: " + b.length);
 		for(int i = 0; i < b.length; i++){
@@ -314,7 +314,7 @@ public class SoundProcessor{
 		return total;
 	}
 	
-	public int getTotalAmp(float[] f){
+	public int getTotalEnergy(float[] f){
 		float total = 0;
 		
 		for(int i = 0; i < f.length-1; i++){
