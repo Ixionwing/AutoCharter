@@ -98,7 +98,6 @@ public class SoundProcessor{
 						for(int tokens = 0; tokens < 16; tokens++){
 								delayFlip = false;
 								rawChunk = new byte[(int)byteArraySize[lane]];
-								//System.out.println("chunk size " + (int)byteArraySize[lane]);
                                 try{
                                 n[lane] = fileStreams.get(lane).read(rawChunk, 0, rawChunk.length);
                                 } catch (Exception ex) {
@@ -108,13 +107,10 @@ public class SoundProcessor{
                                 chunk = NumConverter.bytesToFloat(rawChunk, afs.get(lane).isBigEndian(), afs.get(lane).getSampleSizeInBits());
 								if(!foundNotes[lane]){ // if it's the very first note in each lane
 									int ta = getTotalEnergy(chunk);
-									System.out.println("Total amp for first note in lane " + lane + ": " + ta);
 									if(ta >= 80){
 										foundNotes[lane] = true;
                                         addSignature(chunk, lane);
-                                        System.out.println("Adding note of sample " + signaturesMaster.size());
                                         tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
-                                        System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                         lastNote[lane] = tempList.getList().size()-1;
                                         prevChunk[lane] = Arrays.copyOf(chunk, chunk.length);
                                         lastMeasure[lane] = measure;
@@ -123,17 +119,11 @@ public class SoundProcessor{
 								
 								else{
 									ncfhEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
-									//if (lane < npIndex)
+									if (lane < npIndex){
 										ncfhFreq[lane] = getFreq(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
+										System.out.println("freqs: " + ncfhFreq[lane] + " " + pcshFreq[lane]);
+									}
 									
-									//ncfhEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length));
-									//System.out.println("ncfh: " + ncfhEnergy[lane]);
-                                    /*if (lane == 0) System.out.println("measure: " + measure + " lane: " + lane + " 16th interval: " + tokens +
-                                    		" ncfh: " + ncfhEnergy[lane] + " pcsh: " + pcshEnergy[lane] +
-                                    		" th: " + (int)(ncfhEnergy[lane] * (0.92) - pcshEnergy[lane]) + "/" +  (-(ncfhEnergy[lane] - pcshEnergy[lane])*0.15));
-									*/
-									System.out.println("m" + measure + "l" + lane + "p" + tokens + " ncfh: " + ncfhEnergy[lane] + " pcsh: " + pcshEnergy[lane] + " " + Math.abs((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]));
-									System.out.println("freqs: " + ncfhFreq[lane] + " " + pcshFreq[lane]);
 									boolean cond1, cond2, cond3;
 									if (lane < npIndex){
 										cond1 = (pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 1.55));
@@ -144,59 +134,49 @@ public class SoundProcessor{
 										cond1 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 2.0));
 										cond2 = (ncfhEnergy[lane] > 60 && pcshEnergy[lane] == 0);
 										pitchdiffres = pd.getPitchDiff(getAIS(chunk, lane), getAIS(prevChunk[lane], lane), afs.get(lane), afs.get(lane));
-										System.out.println("Pitch diff: " + pitchdiffres[0] + " " + pitchdiffres[1] + " " + pitchdiffres[2]);
+										//System.out.println("Pitch diff: " + pitchdiffres[0] + " " + pitchdiffres[1] + " " + pitchdiffres[2]);
 										
 										cond3 = (pitchdiffres[0] < 5000 && pitchdiffres[0] != -1.0f && pitchdiffres[2] > (pitchdiffres[0]/34.4));
-										/*if (!cond3 && !cond2 && !cond1){
-											float dtwmin = getMin(chunk, prevChunk[lane]);
-											System.out.println("dtwmin: " + dtwmin);
-										}*/
 										if (delay[lane]) cond3 = true;
 										if (pitchdiffres[0] == -1.0f && (ncfhEnergy[lane] > pcshEnergy[lane]) && !delay[lane]){
 											delay[lane] = true;
 											delayFlip = true;
 											prevChunk[lane] = Arrays.copyOf(chunk, chunk.length);
-											System.out.println("Found delay, setting previous signature tail to true");
+											if (debug)System.out.println("Found delay, setting previous signature tail to true");
 											tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
 										}
 									}
+									if (debug){
 									System.out.print("Cond 1: " + cond1);
 									System.out.print(" Cond 2: " + cond2);
 									System.out.println(" Cond 3: " + cond3);
+									}
+									
 									// TODO: fix thresholds
                                     //if (((ncfhEnergy[lane] * (0.92)) - pcshEnergy[lane]) > -(ncfhEnergy[lane] - pcshEnergy[lane])*0.15 && ncfhEnergy[lane] > 100 ){
                                     if (cond1 || cond2 || cond3){
-                                    	System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
-                                		System.out.println("lane: " + lane + " npIndex: " + npIndex);
+                                    	if (debug)
+                                    		System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
                                     	if (lane < npIndex) {
                                     		int[] sigcheck = compareSignatures(chunk, lane);
                                     		if (sigcheck[0] < 0) {
-                                    			System.out.println(
-                                    					"Adding new signature and cutting off previous signature");
                                     			tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
                                     			addSignature(chunk, lane);
-                                    			System.out.println(
-                                    					"Adding note of sample " + signaturesMaster.size());
                                     			tempList.addNote(new Note(tokens, lane, signaturesMaster.size()));
                                     			lastNote[lane] = signaturesMaster.size();
                                     		} else {
-                                    			System.out.println("Signature match! Setting signature "
-                                    					+ (signatures.get(lane).size() - 1) + " to true");
                                     			tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
                                     			int trueIndex = signaturesMaster
                                     					.indexOf(signatures.get(sigcheck[0]).get(sigcheck[1])) + 1;
                                     			lastNote[lane] = trueIndex;
-                                    			System.out.println("added note index " + trueIndex);
                                     			tempList.addNote(new Note(tokens, lane, trueIndex));
                                     		} 
                                     	}
                                     	else{
-                                    		if (delayFlip){
-                                    			System.out.println("Delay recently found, moving to next token");
+                                    		if (delayFlip)
                                     			continue;
-                                    		}
+                                    		
                                     		int[] sigcheck;
-                                    		System.out.println("Delay found! Moving back one step.");
                                     		if (delay[lane]){
                                     			sigcheck = comparePitches(prevChunk[lane], lane);
                                     		}
@@ -204,7 +184,6 @@ public class SoundProcessor{
                                     			sigcheck = comparePitches(chunk, lane);
                                     		}
                                     		if (sigcheck[0] < 0){
-	                                    		System.out.println("Adding new signature and cutting off previous signature");
 	                                    		tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
 	                                    		if (delay[lane]){
 	                                    			addSignature(prevChunk[lane], lane);
@@ -216,17 +195,13 @@ public class SoundProcessor{
 	                                    			tails.get(lane).set(tails.get(lane).size()-1, mt);
 	                                    		}
 	                                    		else addSignature(chunk, lane);
-	                                    		System.out.println("Adding note of sample " + signaturesMaster.size() + " to position " + (delay[lane] ? tokens-1 : tokens));
 	                                    		tempList.addNote(new Note((delay[lane] ? tokens-1 : tokens), lane, signaturesMaster.size()));
 	                                    		lastNote[lane] = signaturesMaster.size();
                                     		}
                                     		else{
-                                    			System.out.println("Signature match! Setting signature "
-                                    					+ (signatures.get(lane).size() - 1) + " to true");
                                     			tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
                                     			int trueIndex = signaturesMaster.indexOf(signatures.get(sigcheck[0]).get(sigcheck[1])) + 1;
                                     			lastNote[lane] = trueIndex;
-                                    			System.out.println("added note index " + trueIndex);
                                     			tempList.addNote(new Note((delay[lane] ? tokens-1 : tokens), lane, trueIndex));
                                     		}
                                     		delay[lane]=false;
@@ -243,7 +218,6 @@ public class SoundProcessor{
 	                                    	int sigMasterIndex = lastNote[lane]-1;
                                     		if (tempList.getList().size() > 0){
                                     			sigMasterIndex =  tempList.getList().get(tempList.getList().size()-1).getSample()-1;
-                                    			System.out.println("Last note of the lane " + lane + " is " + sigMasterIndex + " (lane " + signaturesMaster.get(sigMasterIndex).getLane() + ") of " + signaturesMaster.size() + "... now looking for it in signatures of lane " + lane + ", size " + signatures.get(lane).size());
                                     			if (signaturesMaster.get(sigMasterIndex).getLane() != lane)
                                     				sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(lastNote[lane]-1));
                                     			else
@@ -252,48 +226,30 @@ public class SoundProcessor{
 	                                    	else {
 	                                    		sigIndex = signatures.get(lane).indexOf(signaturesMaster.get(lastNote[lane]-1));
 	                                    	}
-                                			
-                                			System.out.println(sigIndex);
+                                    		
                                     		if (!tails.get(lane).get(sigIndex).isComplete()){
                                     			//byte[] tempChunk = Arrays.copyOfRange(chunk, 0, cutoff);
                                     			Signature masterTail = tailsMaster.get(sigMasterIndex);
                                     			Signature appendee;
-                                    			System.out.println("Appending tail to signature " + sigMasterIndex + ". Cutoff: " + cutoff);
                                     			if (cutoff == -1){
-                                    				//System.out.println("Tail not yet complete");
                                     				appendee = new Signature(chunk, lane);
                                     			}
                                     			else{
                                     				appendee = new Signature(Arrays.copyOf(chunk, cutoff), lane);
-                                        			//System.out.println("Tail complete!");
                                         			masterTail.setComplete(true);
                                     			}
                                     			masterTail.append(appendee);
                                     			
-                                    			//System.out.println("Tail is now " + newTail[0] + " " + newTail[newTail.length-1]);
                                     			tailsMaster.set(sigMasterIndex, masterTail);
                                     			tails.get(lane).set(sigIndex, masterTail);
-                                    			//System.out.println("Indices " + sigMasterIndex + " " + sigIndex + " are now set to " + tailsMaster.get(sigMasterIndex).isComplete() + " " + tails.get(lane).get(sigIndex).isComplete());
                                     		}
                                     	}
                                     }
 									
 								}
 								pcshEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
-								//if (lane < npIndex)
+								if (lane < npIndex)
 									pcshFreq[lane] = getFreq(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
-								//pcshEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length));
-                                
-								
-								//if (pcshEnergy[lane] < 20000 && pcshEnergy[lane] > 5000 && lane == 2)
-                                //    System.out.println("pcsh at this point is: " + pcshEnergy[lane]);
-                                /*if (pcshEnergy < 20000 && pcshEnergy > 1000 && lane == 2){
-                                    for (int z = 0; z < 4; z++){
-                                        //System.out.println("Chunk length: " + chunk.length);
-                                        //System.out.println("Position in chunk: " + (((int)byteArraySize[lane]/2) + (z*(int)byteArraySize[lane]/8)));
-                                        System.out.println(getTotalEnergy(Arrays.copyOfRange(chunk, chunk.length/2 + z*chunk.length/8, chunk.length/2 + (z+1)*chunk.length/8)));
-                                    }
-                                }*/
 						}
 					}
                 }
@@ -305,7 +261,6 @@ public class SoundProcessor{
 	public int getTotalEnergy(byte[] b){
 		int total = 0;
 		for(int i = 0; i < b.length; i++){
-			//if (i<100) System.out.print(b[i] + " ");
 			if((b[i] > 0 && b[i] > b[i+1]) || (b[i] < 0 && b[i] < b[i+1]) )
 				total += Math.abs(b[i]);
 		}
@@ -506,7 +461,6 @@ public class SoundProcessor{
 	public boolean matchDTW(float[] chunkAC, float[] sigAC){
 		float shortest = getMin(chunkAC, sigAC);
 		
-		System.out.println("Shortest path: " + shortest);
 		if (shortest < 5.0f) return true;
 		return false;
 	}

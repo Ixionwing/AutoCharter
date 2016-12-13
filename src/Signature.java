@@ -51,8 +51,6 @@ public class Signature {
 				this.floats = newArr;
 			}
 		}
-
-		//System.out.println("Append successful! Lane + " + lane + " with length " + floats.length);
 	}
 	
 	public void append (Signature sig){
@@ -70,8 +68,6 @@ public class Signature {
 				this.floats = newArr;
 			}
 		}
-		
-		//System.out.println("Append successful! Lane " + lane + " with length " + floats.length);
 	}
 	
 }

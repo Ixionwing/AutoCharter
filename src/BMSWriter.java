@@ -75,7 +75,6 @@ public class BMSWriter{
                 String[] tokenStringArray = nls.get(measure).compileNotes(fileStreams.size());
                 for (int lane = 0; lane < fileStreams.size(); lane++){
                     if(tokenStringArray[lane] != null){
-                        //System.out.println("Printing lane " + getID(lane) + " in measure " + (measure+1));
                         if (!tokenStringArray[lane].equals("")){
                             writer.write("#" + String.format("%03d",measure+1) + (getID(lane) < 10 ? "0" : "") + getID(lane) + ":" + tokenStringArray[lane]);
                             writer.newLine();
@@ -93,7 +92,6 @@ public class BMSWriter{
             	ArrayList<Signature> sigList = signatures.get(lane);
             	ArrayList<Signature> tailList = tails.get(lane);
             	for(int num = 0; num < sigList.size(); num++){
-            		System.out.println("Now writing to file from lane " + lane + " signature " + num + " with tail length " + tailList.size());
             		Signature combinedArr = new Signature(sigList.get(num).getFloats(), lane);
             		combinedArr.append(tailList.get(num));
             		AudioInputStream ais = sp.getAIS(combinedArr, lane);
