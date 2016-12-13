@@ -70,12 +70,12 @@ public class NoteList{
                     tokenDiv = 1;
                     break;
                 }
-                
                 if (tokenDiv == 4){
-                    if (n.getPosition() % 4 == 2)
-                        tokenDiv = 2;
-                    else if (n.getPosition() % 4 == 1){
-                        tokenDiv = 1;
+                    if (n.getPosition() % 4 == 2){
+                    	tokenDiv = 2;
+                    }
+                    if (n.getPosition() % 2 == 1){
+                    	tokenDiv = 1;
                         break;
                     }
                 }
@@ -87,10 +87,9 @@ public class NoteList{
                 }
             }
             
-            //System.out.println("tokenDiv = " + tokenDiv + " trueInterval = " + trueInterval);
+            
             
             for (int j = 0; j < trueInterval; j+=tokenDiv){
-                //System.out.println("j = " + j);
                 if(tempList.size() != 0){
                     if (tempList.get(0).getPosition() == j){
                         lanes[i] += Integer.toString(tempList.get(0).getSample() + 35, 36);

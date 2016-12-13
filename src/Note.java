@@ -81,6 +81,6 @@ public class Note{
     
     @Override
     public String toString(){
-        return "Note | Position: " + position + " Interval: " + interval;
+        return "Note | Lane: " + lane + " Position: " + position + " Interval: " + interval + " Sample: " + sample;
     }
 }
