@@ -44,8 +44,8 @@ public class SoundProcessor{
 			float[][] prevChunk = new float[fileStreams.size()][];
 			int[] ncfhEnergy = new int[fileStreams.size()];
 			int[] pcshEnergy = new int[fileStreams.size()];
-			int[] ncfhFreq = new int[fileStreams.size()];
-			int[] pcshFreq = new int[fileStreams.size()];
+			int[] ncfhDensity = new int[fileStreams.size()];
+			int[] pcshDensity = new int[fileStreams.size()];
 			double sixteenthLength;
 			boolean[] foundNotes = new boolean[fileStreams.size()];
 			int[] lastNote = new int[fileStreams.size()]; // keeps track of the index of the last note confirmed in each measure
@@ -120,15 +120,15 @@ public class SoundProcessor{
 								else{
 									ncfhEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
 									if (lane < npIndex){
-										ncfhFreq[lane] = getFreq(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
-										System.out.println("freqs: " + ncfhFreq[lane] + " " + pcshFreq[lane]);
+										ncfhDensity[lane] = getDensity(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
+										System.out.println("Densitys: " + ncfhDensity[lane] + " " + pcshDensity[lane]);
 									}
 									
 									boolean cond1, cond2, cond3;
 									if (lane < npIndex){
 										cond1 = (pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 1.55));
 										cond2 = (ncfhEnergy[lane] > 100 && pcshEnergy[lane] == 0);
-										cond3 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] > 25 && pcshFreq[lane] != 0 && ((double)ncfhFreq[lane]/(double)pcshFreq[lane]) >= 2.0);
+										cond3 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] > 25 && pcshDensity[lane] != 0 && ((double)ncfhDensity[lane]/(double)pcshDensity[lane]) >= 2.0);
 									}
 									else{
 										cond1 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 2.0));
@@ -249,7 +249,7 @@ public class SoundProcessor{
 								}
 								pcshEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
 								if (lane < npIndex)
-									pcshFreq[lane] = getFreq(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
+									pcshDensity[lane] = getDensity(Arrays.copyOfRange(chunk, (int)(chunk.length/2), (int)chunk.length));
 						}
 					}
                 }
@@ -277,7 +277,7 @@ public class SoundProcessor{
 		return (int)total;
 	}
 	
-	public int getFreq(byte[] b){
+	public int getDensity(byte[] b){
 		int total = 0;
 		
 		for(int i = 0; i < b.length-1; i++){
@@ -287,7 +287,7 @@ public class SoundProcessor{
 		return total;
 	}
 	
-	public int getFreq(float[] f){
+	public int getDensity(float[] f){
 		int total = 0;
 		boolean mode = (f[0] < f[1]);
 		
