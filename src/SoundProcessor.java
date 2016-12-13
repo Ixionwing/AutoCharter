@@ -128,7 +128,7 @@ public class SoundProcessor{
 									if (lane < npIndex){
 										cond1 = (pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 1.55));
 										cond2 = (ncfhEnergy[lane] > 100 && pcshEnergy[lane] == 0);
-										cond3 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] > 25 && ((double)ncfhDensity[lane]/(double)pcshDensity[lane]) >= 2.0);
+										cond3 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] > 25 && pcshDensity[lane] != 0 && ((double)ncfhDensity[lane]/(double)pcshDensity[lane]) >= 2.0);
 									}
 									else{
 										cond1 = (ncfhEnergy[lane] > 50 && pcshEnergy[lane] != 0 && ( ((double)ncfhEnergy[lane]/(double)pcshEnergy[lane]) > 2.0));
