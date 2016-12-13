@@ -60,3 +60,18 @@ v1.2
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+v2.0
+
+a.k.a. "WE MADE IT FAM"
+
+- Now actually object oriented
+
+- Can now also read harmonic sound files (as opposed to just percussion)
+
+- uses LPC and DTW for general pattern recognition
+
+- uses YIN, MPM, and AMDF pitch detection algorithms
+
+- now cuts up (or attempts to cut up) keysounds
+
+- also contains future groundwork for 24th/48th note detection

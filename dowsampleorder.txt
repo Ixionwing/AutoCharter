@@ -1,8 +1,0 @@
-dowkick.wav
-dowclap.wav
-dowbass.wav
-dowcymbal.wav
-dowbells.wav
-dowsynth.wav
-dowvox.wav
-0
