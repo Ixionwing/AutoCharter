@@ -42,13 +42,14 @@ public class AutoCharter{
 			if (i==8) System.out.println("[WARNING] All files beyond this point will be placed in the background lanes.");
 			temp = scan.nextLine();
 			if(!(temp.equals("0"))){
-				System.out.println("Importing file " + temp);
 				if (!npIndexFlag && temp.toLowerCase().equals("p")){
 					npIndex = i;
 					i--;
 					npIndexFlag = true;
+					System.out.println("Now taking in non-percussion files.");
 					continue;
 				}
+				System.out.println("Importing file " + temp);
 				try{
 					audioFilenames.add(temp);
 					fileTemp.add(new File(temp));

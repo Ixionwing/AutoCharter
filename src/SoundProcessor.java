@@ -329,6 +329,11 @@ public class SoundProcessor{
 				//System.out.println("Matching note with signature " + j + " in lane " + i);
 				if(matchLPC(chunk, lane, j))
 					return new int[]{lane,j};
+				else if (lane < npIndex) {
+					boolean nr = matchDTW(chunk, signatures.get(lane).get(j).getFloats());
+					System.out.println("MatchDTW finished! Result: " + nr);
+					if(nr) return new int[]{lane, j};
+				}
 			}
 		//}
 		return new int[]{-1,-1};
@@ -415,14 +420,6 @@ public class SoundProcessor{
 				}
 				System.out.println();
 			//}
-		}
-		//TODO: refine algo
-		if (!result){
-			if (i < npIndex) {
-				boolean nr = matchDTW(chunk, signatures.get(i).get(j).getFloats());
-				System.out.println("MatchDTW finished! Result: " + nr);
-				return result || nr;
-			}
 		}
 		
 		return result;
