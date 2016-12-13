@@ -20,7 +20,7 @@ public class SoundProcessor{
     private ArrayList<ArrayList<Signature>> tails;
     private ArrayList<AudioFormat> afs;
     private ArrayList<AudioFileFormat> affs;
-    boolean debug = true;
+    boolean debug = false;
     
     public SoundProcessor(ArrayList<AudioInputStream> fileStreams, ArrayList<File> files, int bpm, int npIndex){
         this.fileStreams = fileStreams;
@@ -392,7 +392,7 @@ public class SoundProcessor{
 		float sigMSE = Lpc.wld(sigLPC, sigAC, sigref, lag-1);
 		
 		float sum = 0;
-		float threshold = (i < npIndex ? 2.0f : 1.0f);
+		float threshold = (i < npIndex ? 1.0f : 1.5f);
 		
 		for (int k = 0; k < lag-1; k++){
 			sum += Math.pow((chunkLPC[k] - sigLPC[k]), 2);
@@ -401,6 +401,7 @@ public class SoundProcessor{
 		boolean result = sum<threshold;
 		
 		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (result));
+		
 		if (debug){
 			System.out.println("chunkMSE: " + chunkMSE);
 			System.out.println("sigMSE: " + sigMSE);
@@ -415,65 +416,88 @@ public class SoundProcessor{
 				System.out.println();
 			//}
 		}
-		return (result);
-	}
-	
-	/*
-	public int compareSignatures(byte[] chunk){
-		for(int i = 0; i < signatures.size(); i++){
-			System.out.println("Matching note with signature " + i);
-			if(matchDTW(chunk, i))
-				return i;
-		}
-		return -1;
-	}
-	
-	public boolean matchDTW(byte[] chunk, int sigIndex){
-		int[][] distMatrix = new int[chunk.length/10][signatures.get(sigIndex).length/10];
-		
-		for(int i = 0; i < distMatrix.length; i++){
-			int totalC = 0;
-			
-			for(int l = 0; l < 10; l++){
-				totalC += chunk[i*10 + l];
-			}
-			
-			for(int j = 0; j < distMatrix[0].length; j++){
-				int totalS = 0;
-				
-				for(int k = 0; k < 10; k++){
-					totalS += (signatures.get(sigIndex))[j*10 + k];
-				}
-				
-				distMatrix[i][j] = (int) (Math.pow((totalC - totalS), 2));
+		//TODO: refine algo
+		if (!result){
+			if (i < npIndex) {
+				boolean nr = matchDTW(chunk, signatures.get(i).get(j).getFloats());
+				System.out.println("MatchDTW finished! Result: " + nr);
+				return result || nr;
 			}
 		}
 		
-		int shortest = getMin(distMatrix, 0, 0, 0, 0, 0);
+		return result;
+	}
+	
+	public boolean matchDTW(float[] chunkAC, float[] sigAC){
+		float[][] distMatrix = new float[chunkAC.length][sigAC.length];
+		
+		for(int i = 0; i < chunkAC.length; i++){
+			for(int j = 0; j < sigAC.length; j++){
+				distMatrix[i][j] = (float)(Math.pow((sigAC[j]-chunkAC[i]), 2));
+			}
+		}
+		
+		float shortest = getMin(distMatrix);
 		
 		System.out.println("Shortest path: " + shortest);
-		if (shortest < 5000) return true;
+		if (shortest < 50.0f) return true;
 		return false;
 	}
 	
-	public int getMin(int[][] distMatrix, int up, int right, int upright, int x, int y){
-		int nextup = -1, nextright = -1, nextupright = -1;
+	public float getMin(float[][] distMatrix){
+		float[][] accumDist = new float[distMatrix.length][distMatrix[0].length];
+		float sum = 0;
 		
-		if (y < (distMatrix.length-1))
-			nextup = getMin(distMatrix, up + distMatrix[y+1][x] - distMatrix[y][x], right, upright, x, y+1);
-		if (x < (distMatrix[0].length-1))
-			nextright = getMin(distMatrix, up, right + distMatrix[y][x+1] - distMatrix[y][x], upright, x+1, y);
-		if (y < (distMatrix.length-1) && x < (distMatrix[0].length-1))
-			nextupright = getMin(distMatrix, up, right, upright + distMatrix[y+1][x+1] - distMatrix[y][x], x+1, y+1);
+		accumDist[0][0] = distMatrix[0][0];
+		for (int i = 1; i < distMatrix[0].length; i++){
+			accumDist[0][i] = distMatrix[0][i] + distMatrix[0][i-1];
+		}
 		
+		for (int i = 1; i < distMatrix.length; i++){
+			accumDist[i][0] = distMatrix[i][0] + distMatrix[i-1][0];
+		}
 		
-		if (nextup == -1) return Math.min(nextright, nextupright);
-		if (nextright == -1) return Math.min(nextup, nextupright);
-		if (nextupright == -1) return Math.min(nextup, nextright);
-		if (x == distMatrix[0].length-1 && y == distMatrix.length-1) return Math.min(up, Math.min(nextup,  nextright));
-		return Math.min(nextup, Math.min(nextright, nextupright));
+		for (int i = 1; i < distMatrix.length; i++){
+			for(int j = 1; j < distMatrix[0].length; j++){
+				accumDist[i][j] = Math.min(accumDist[i-1][j-1], Math.min(accumDist[i-1][j], accumDist[i][j-1])) + distMatrix[i][j];
+			}
+		}
+		
+		ArrayList<Integer> pathX = new ArrayList<Integer>();
+		ArrayList<Integer> pathY = new ArrayList<Integer>();
+		
+		int i = accumDist.length-1;
+		int j = accumDist[0].length-1;
+		
+		pathX.add(j);
+		pathY.add(i);
+		
+		while(i > 0 && j > 0){
+			if (i==0) j--;
+			else if (j==0) i--;
+			else{
+				float minf = Math.min(accumDist[i-1][j-1], Math.min(accumDist[i-1][j], accumDist[i][j-1]));
+				if (accumDist[i-1][j] == minf) i--;
+				else if (accumDist[i][j-1] == minf) j--;
+				else{
+					i--;
+					j--;
+				}
+			}
+			pathY.add(i);
+			pathX.add(j);
+		}
+		
+		pathX.add(0);
+		pathY.add(0);
+		
+		for(i = 0; i < pathX.size(); i++){
+			sum+=distMatrix[pathY.get(i)][pathX.get(i)];
+		}
+		
+		return sum;
 	}
-	*/
+	
     
     public void closefileStreams(){
         try{
