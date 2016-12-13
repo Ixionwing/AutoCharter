@@ -304,13 +304,11 @@ public class SoundProcessor{
     	
 	public int getTotalEnergy(byte[] b){
 		int total = 0;
-		//System.out.println("Chunk length: " + b.length);
 		for(int i = 0; i < b.length; i++){
 			//if (i<100) System.out.print(b[i] + " ");
 			if((b[i] > 0 && b[i] > b[i+1]) || (b[i] < 0 && b[i] < b[i+1]) )
 				total += Math.abs(b[i]);
 		}
-		//System.out.println("Total amp is: " + total);
 		return total;
 	}
 	
@@ -321,7 +319,6 @@ public class SoundProcessor{
 			if((f[i] > 0 && f[i] > f[i+1]) || (f[i] < 0 && f[i] < f[i+1]) )
 				total += Math.abs(f[i]);
 		}
-		//System.out.println("Total amp is: " + (int)total);
 		return (int)total;
 	}
 	
@@ -354,7 +351,7 @@ public class SoundProcessor{
 	public boolean checkIfEnd(double[] byteArraySize, int filenum, boolean[] fileStatus){
 		for(int i = 0; i < filenum; i++){
 			try{
-				//System.out.println("byte array size " + byteArraySize[i] + " available " + fileStreams.get(i).available());
+				
 				if (fileStreams.get(i).available() < byteArraySize[i])
 					fileStatus[i] = true;
 				else
@@ -401,12 +398,10 @@ public class SoundProcessor{
 	public int[] compareSignatures(float[] chunk, int lane){
 		//for(int i = 0; i < signatures.size(); i++){
 			for (int j = 0; j < signatures.get(lane).size(); j++){
-				//System.out.println("Matching note with signature " + j + " in lane " + i);
 				if(matchLPC(chunk, lane, j))
 					return new int[]{lane,j};
 				else if (lane < npIndex) {
 					boolean nr = matchDTW(chunk, signatures.get(lane).get(j).getFloats());
-					System.out.println("MatchDTW finished! Result: " + nr);
 					if(nr) return new int[]{lane, j};
 				}
 			}
@@ -423,10 +418,7 @@ public class SoundProcessor{
 		
 		return new int[]{-1,-1};
 	}
-	
-	
-	// TODO: Detect pitch with Tarsos YIN
-	// TODO: Account for drift?
+
 	public boolean matchLPC(float[] chunk1, float[] chunk2){
 		int lag = 16;
 		
@@ -440,8 +432,8 @@ public class SoundProcessor{
 		Lpc.autocorr(chunk1, chunk1AC, lag, chunk1.length);
 		Lpc.autocorr(chunk2, chunk2AC, lag, chunk2.length);
 		
-		Lpc.wld(chunk1LPC, chunk1AC, chunk1ref, lag-1);
-		Lpc.wld(chunk2LPC, chunk2AC, chunk2ref, lag-1);
+		float chunk1MSE = Lpc.wld(chunk1LPC, chunk1AC, chunk1ref, lag-1);
+		float chunk2MSE = Lpc.wld(chunk2LPC, chunk2AC, chunk2ref, lag-1);
 		
 		float sum = 0;
 		float threshold = 1.0f;
@@ -451,16 +443,19 @@ public class SoundProcessor{
 		}
 		
 		boolean result = sum<threshold;
-		System.out.println("Sum of LPC is: " + sum + ", returns " + (result));
-		if (!result){
-			for (int k = 0; k < lag-1; k++){
-				System.out.print(chunk1LPC[k] + "|");
+		if (debug){
+			System.out.println("chunk1: " + chunk1MSE);
+			System.out.println("chunk2: " + chunk2MSE);
+			if (!result){
+				for (int k = 0; k < lag-1; k++){
+					System.out.print(chunk1LPC[k] + "|");
+				}
+				System.out.println();
+				for (int k = 0; k < lag-1; k++){
+					System.out.print(chunk2LPC[k] + "|");
+				}
+				System.out.println();
 			}
-			System.out.println();
-			for (int k = 0; k < lag-1; k++){
-				System.out.print(chunk2LPC[k] + "|");
-			}
-			System.out.println();
 		}
 
 		return result;
@@ -490,12 +485,10 @@ public class SoundProcessor{
 		
 		boolean result = sum<threshold;
 		
-		System.out.println("Sum of LPC between current note and signature (" + i + "," + j + ") is: " + sum + ", returns " + (result));
-		
 		if (debug){
 			System.out.println("chunkMSE: " + chunkMSE);
 			System.out.println("sigMSE: " + sigMSE);
-			//if (!result){
+			if (!result){
 				for (int k = 0; k < lag-1; k++){
 					System.out.print(chunkLPC[k] + "|");
 				}
@@ -504,7 +497,7 @@ public class SoundProcessor{
 					System.out.print(sigLPC[k] + "|");
 				}
 				System.out.println();
-			//}
+			}
 		}
 		
 		return result;
