@@ -92,7 +92,7 @@ public class NoteList{
             for (int j = 0; j < trueInterval; j+=tokenDiv){
                 if(tempList.size() != 0){
                     if (tempList.get(0).getPosition() == j){
-                        lanes[i] += Integer.toString(tempList.get(0).getSample() + 35, 36);
+                        lanes[i] += (tempList.get(0).getSample() < 36 ? "0" : "") + Integer.toString(tempList.get(0).getSample(), 36);
                         tempList.remove(0);
                     }
                     else

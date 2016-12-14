@@ -5,12 +5,9 @@ import java.util.*;
 public class BMSWriter{
     private BufferedWriter writer;
     //private String bmsFileName;
-    private ArrayList<String> audioFilenames;
 
     public BMSWriter(String fileName, ArrayList<String> audioFilenames){
         try{
-            //this.bmsFileName = fileName;
-            this.audioFilenames = audioFilenames;
             this.writer = new BufferedWriter(new OutputStreamWriter( new FileOutputStream(fileName), "utf-8"));
         } catch (Exception ex){
             ex.printStackTrace();
@@ -42,11 +39,6 @@ public class BMSWriter{
 			writer.newLine();
 			writer.newLine();
 			
-			for(int i = 0; i < audioFilenames.size(); i++){
-				writer.write("#WAV0" + (i+1) + " " + audioFilenames.get(i));
-				writer.newLine();
-			}
-			
 			for(int i = 0; i < 5; i++)
 				writer.newLine();
 				
@@ -54,11 +46,6 @@ public class BMSWriter{
 			
 			for(int i = 0; i < 5; i++)
 				writer.newLine();
-			
-			for(int j = 0; j < audioFilenames.size(); j++){
-				writer.write("#00101:0" + (j+1));
-				writer.newLine();
-			}
 			
 		} catch (Exception ex) {
 		  ex.printStackTrace();
@@ -97,7 +84,7 @@ public class BMSWriter{
             		AudioInputStream ais = sp.getAIS(combinedArr, lane);
             		AudioFileFormat.Type targetFileType = sp.getAFF(lane).getType();
             		int noteIndex = sigsMaster.indexOf(sigList.get(num));
-            		String filename = Integer.toString(noteIndex + 36, 36);
+            		String filename = (noteIndex < 35 ? "0" : "") + Integer.toString(noteIndex + 1, 36);
             		File outputFile = new File(filename + ".wav");
             		AudioSystem.write(ais, targetFileType, outputFile);
             	}
@@ -106,7 +93,7 @@ public class BMSWriter{
             writer.newLine();
             
             for (int i = 0; i < sigsMaster.size(); i++){
-            	String s = Integer.toString(i+36, 36);
+            	String s = (i < 35 ? "0" : "") + Integer.toString(i+1, 36);
             	writer.write("#WAV" + s + " " + s + ".wav");
             	writer.newLine();
             }
