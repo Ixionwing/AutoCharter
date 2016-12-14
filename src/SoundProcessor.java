@@ -73,7 +73,7 @@ public class SoundProcessor{
 			// Sixteenth note          =   15 / BPM
 			
 			sixteenthLength = 15.0/bpm;
-			System.out.println("Length of 16th note is " + sixteenthLength);
+			System.out.println("Length of 16th note is " + sixteenthLength + "s");
 			
 			// formulae for bytes to read:
 			// bytes = seconds * sample rate * channels * (bits per sample / 8)
@@ -82,8 +82,7 @@ public class SoundProcessor{
 			
 			for(int i = 0; i < fileStreams.size(); i++){
 			byteArraySize[i] = sixteenthLength * afs.get(i).getSampleRate() * afs.get(i).getFrameSize();
-			while(byteArraySize[i] % 4.0 >= 0.5)
-				byteArraySize[i] += 0.5;
+			byteArraySize[i] += 4.0 - (byteArraySize[i]%4.0);
 			System.out.println("Byte array size for file " + i + " is " + (int)byteArraySize[i]);
 			}
 			
@@ -121,7 +120,7 @@ public class SoundProcessor{
 									ncfhEnergy[lane] = getTotalEnergy(Arrays.copyOfRange(chunk, 0, chunk.length/2 -1));
 									if (lane < npIndex){
 										ncfhDensity[lane] = getDensity(Arrays.copyOfRange(chunk, 0, chunk.length/2-1));
-										System.out.println("Densitys: " + ncfhDensity[lane] + " " + pcshDensity[lane]);
+										//System.out.println("Densities: " + ncfhDensity[lane] + " " + pcshDensity[lane]);
 									}
 									
 									boolean cond1, cond2, cond3;
@@ -147,13 +146,11 @@ public class SoundProcessor{
 										}
 									}
 									if (debug){
-									System.out.print("Cond 1: " + cond1);
-									System.out.print(" Cond 2: " + cond2);
-									System.out.println(" Cond 3: " + cond3);
+										System.out.print("Cond 1: " + cond1);
+										System.out.print(" Cond 2: " + cond2);
+										System.out.println(" Cond 3: " + cond3);
 									}
 									
-									// TODO: fix thresholds
-                                    //if (((ncfhEnergy[lane] * (0.92)) - pcshEnergy[lane]) > -(ncfhEnergy[lane] - pcshEnergy[lane])*0.15 && ncfhEnergy[lane] > 100 ){
                                     if (cond1 || cond2 || cond3){
                                     	if (debug)
                                     		System.out.println("Note found! M" + measure + ":L" + lane + ":P" + tokens);
@@ -228,7 +225,6 @@ public class SoundProcessor{
 	                                    	}
                                     		
                                     		if (!tails.get(lane).get(sigIndex).isComplete()){
-                                    			//byte[] tempChunk = Arrays.copyOfRange(chunk, 0, cutoff);
                                     			Signature masterTail = tailsMaster.get(sigMasterIndex);
                                     			Signature appendee;
                                     			if (cutoff == -1){
@@ -356,6 +352,7 @@ public class SoundProcessor{
 				if(matchLPC(chunk, lane, j))
 					return new int[]{lane,j};
 				else if (lane < npIndex) {
+					if (debug)System.out.println("Comparing current chunk to signature " + j + " in lane " + lane);
 					boolean nr = matchDTW(chunk, signatures.get(lane).get(j).getFloats());
 					if(nr) return new int[]{lane, j};
 				}
@@ -460,8 +457,7 @@ public class SoundProcessor{
 	
 	public boolean matchDTW(float[] chunkAC, float[] sigAC){
 		float shortest = getMin(chunkAC, sigAC);
-		
-		if (shortest < 5.0f) return true;
+		if (shortest < 0.002f) return true;
 		return false;
 	}
 	
@@ -492,8 +488,8 @@ public class SoundProcessor{
 			}
 		}
 		
-		ArrayList<Integer> pathX = new ArrayList<Integer>();
-		ArrayList<Integer> pathY = new ArrayList<Integer>();
+		ArrayList<Integer> pathX = new ArrayList<Integer>((int)Math.sqrt(accumDist.length * accumDist[0].length));
+		ArrayList<Integer> pathY = new ArrayList<Integer>((int)Math.sqrt(accumDist.length * accumDist[0].length));
 		
 		int i = accumDist.length-1;
 		int j = accumDist[0].length-1;
@@ -501,7 +497,7 @@ public class SoundProcessor{
 		pathX.add(j);
 		pathY.add(i);
 		
-		while(i > 0 || j > 0){
+		while(i > 0 && j > 0){
 			if (i==0) j--;
 			else if (j==0) i--;
 			else{
@@ -517,6 +513,8 @@ public class SoundProcessor{
 			pathX.add(j);
 		}
 		
+		if (debug)System.out.println("Final position: " + pathX.get(pathX.size()-1) + " " + pathY.get(pathY.size()-1));
+		
 		pathX.add(0);
 		pathY.add(0);
 		
@@ -524,7 +522,9 @@ public class SoundProcessor{
 			sum+=distMatrix[pathY.get(i)][pathX.get(i)];
 		}
 		
-		return sum;
+		if (debug)System.out.println("Sum: " +sum+ " Path length: " + pathX.size());
+		
+		return sum/pathX.size();
 	}
 	
     
