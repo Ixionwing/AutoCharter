@@ -173,14 +173,17 @@ public class SoundProcessor{
                                     		if (delayFlip)
                                     			continue;
                                     		
-                                    		int[] sigcheck;
+                                    		int[] sigcheck1, sigcheck2;
                                     		if (delay[lane]){
-                                    			sigcheck = comparePitches(prevChunk[lane], lane);
+                                    			sigcheck1 = comparePitches(prevChunk[lane], lane);
+                                    			sigcheck2 = compareSignatures(prevChunk[lane], lane);
                                     		}
                                     		else{ 
-                                    			sigcheck = comparePitches(chunk, lane);
+                                    			sigcheck1 = comparePitches(chunk, lane);
+                                    			sigcheck2 = compareSignatures(chunk, lane);
                                     		}
-                                    		if (sigcheck[0] < 0){
+                                    		if(debug)System.out.println("sigcheck1: " + sigcheck1[0] + "|" + sigcheck1[1] + " sigcheck2: " + sigcheck2[0] + "|" + sigcheck2[1]);
+                                    		if (sigcheck1[0] < 0 || sigcheck2[0] < 0){
 	                                    		tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
 	                                    		if (delay[lane]){
 	                                    			addSignature(prevChunk[lane], lane);
@@ -197,7 +200,7 @@ public class SoundProcessor{
                                     		}
                                     		else{
                                     			tails.get(lane).get(tails.get(lane).size() - 1).setComplete(true);
-                                    			int trueIndex = signaturesMaster.indexOf(signatures.get(sigcheck[0]).get(sigcheck[1])) + 1;
+                                    			int trueIndex = signaturesMaster.indexOf(signatures.get(sigcheck1[0]).get(sigcheck1[1])) + 1;
                                     			lastNote[lane] = trueIndex;
                                     			tempList.addNote(new Note((delay[lane] ? tokens-1 : tokens), lane, trueIndex));
                                     		}
@@ -497,7 +500,7 @@ public class SoundProcessor{
 		pathX.add(j);
 		pathY.add(i);
 		
-		while(i > 0 && j > 0){
+		while(i > 0 || j > 0){
 			if (i==0) j--;
 			else if (j==0) i--;
 			else{
@@ -513,8 +516,6 @@ public class SoundProcessor{
 			pathX.add(j);
 		}
 		
-		if (debug)System.out.println("Final position: " + pathX.get(pathX.size()-1) + " " + pathY.get(pathY.size()-1));
-		
 		pathX.add(0);
 		pathY.add(0);
 		
@@ -522,7 +523,7 @@ public class SoundProcessor{
 			sum+=distMatrix[pathY.get(i)][pathX.get(i)];
 		}
 		
-		if (debug)System.out.println("Sum: " +sum+ " Path length: " + pathX.size());
+		if (debug)System.out.println("Sum: " +sum+ " Path length: " + pathX.size() + "returning " + sum/pathX.size());
 		
 		return sum/pathX.size();
 	}

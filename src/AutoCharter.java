@@ -38,7 +38,7 @@ public class AutoCharter{
 		System.out.println("Putting in all percussion files first, then switching out of percussion by entering [P] is recommended.");
 		System.out.println("Also, all lanes beyond 8 will be placed in the background.");
 		System.out.println("Input up to 36 filenames, including extension (exit with 0): ");
-		for(int i = 0; i<36; i++){
+		for(int i = 0; i<35; i++){
 			if (i==8) System.out.println("[WARNING] All files beyond this point will be placed in the background lanes.");
 			temp = scan.nextLine();
 			if(!(temp.equals("0"))){
