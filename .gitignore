@@ -4,3 +4,4 @@ bin/
 [a-zA-Z0-9][a-zA-Z0-9].wav
 ~WRL0003.tmp
 *.docx
+*.pptx
